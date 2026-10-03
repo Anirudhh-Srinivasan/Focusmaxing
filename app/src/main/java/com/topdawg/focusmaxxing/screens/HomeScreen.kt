@@ -1,105 +1,63 @@
 package com.topdawg.focusmaxxing.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.GroupAdd
-import androidx.compose.material.icons.filled.SmartDisplay
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.topdawg.focusmaxxing.data.Room
+import com.topdawg.focusmaxxing.data.UserProfile
 import com.topdawg.focusmaxxing.viewmodels.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
-    viewModel: HomeViewModel,
-    onNavigateToCreate: () -> Unit,
-    onNavigateToJoin: () -> Unit
-) {
-    val appName = viewModel.getAppName()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = appName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp
-                    )
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Logo icon
-            Icon(
-                imageVector = Icons.Default.SmartDisplay,
-                contentDescription = "Focusmaxxing Logo",
-                modifier = Modifier.size(120.dp)
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // App name
-            Text(
-                text = appName,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            Spacer(modifier = Modifier.height(64.dp))
-
-            // Create Lobby button
-            Button(
-                onClick = onNavigateToCreate,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Icon(
-                    imageVector = Icons.Default.GroupAdd,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Create Lobby", fontSize = 18.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Join Lobby button
-            Button(
-                onClick = onNavigateToJoin,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.medium,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Group,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Join Lobby", fontSize = 18.sp)
-            }
+fun HomeScreen(viewModel: HomeViewModel, isGuest: Boolean, roomActionLoading: Boolean, roomActionError: String?, clearRoomActionError: () -> Unit, onNavigateToCreate: () -> Unit, onNavigateToJoin: () -> Unit, onJoinPublic: (String) -> Unit, onFriends: () -> Unit, onRequests: () -> Unit, onUpgrade: () -> Unit, onSignOut: () -> Unit) {
+    val state by viewModel.uiState.collectAsState()
+    Scaffold(topBar = { TopAppBar(title = { Text("Focusmaxxing", fontWeight = FontWeight.Bold) }, actions = {
+        IconButton(onClick = onFriends) { Icon(Icons.Default.People, contentDescription = "Friends") }
+        if (!isGuest) IconButton(onClick = onRequests) { Icon(Icons.Default.PersonAdd, contentDescription = "Friend requests") }
+        TextButton(onClick = onSignOut) { Text("Sign out") }
+    }) }) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item { state.profile?.let { StatsCard(it) } ?: Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(20.dp)) { if (state.profileLoading) CircularProgressIndicator() else Text(state.error ?: "Your stats are unavailable.", color = MaterialTheme.colorScheme.error); if (!state.profileLoading) TextButton(onClick = viewModel::refreshProfile) { Text("Retry") } } } }
+            if (isGuest) item { TextButton(onClick = onUpgrade) { Text("Upgrade account to keep your progress") } }
+            item { Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onNavigateToCreate, modifier = Modifier.weight(1f)) { Text("Create Lobby") }
+                OutlinedButton(onClick = onNavigateToJoin, modifier = Modifier.weight(1f)) { Text("Join with Code") }
+            } }
+            item { Text("Public lobbies", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp)) }
+            roomActionError?.let { message -> item { Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f)); TextButton(onClick = clearRoomActionError) { Text("Dismiss") } } } } }
+            if (state.roomsLoading && state.rooms.isEmpty()) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+            if (!state.roomsLoading && state.rooms.isEmpty()) item { Text("No public lobbies right now. Create one and invite your friends.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            if (roomActionLoading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+            state.error?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error); if (state.rooms.isEmpty()) TextButton(onClick = viewModel::retryPublicRooms) { Text("Retry") } } }
+            items(state.rooms, key = { it.code }) { room -> PublicRoomCard(room, onClick = { onJoinPublic(room.code) }) }
         }
     }
 }
+
+@Composable
+fun StatsCard(profile: UserProfile) {
+    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(18.dp)) {
+        Text("Your stats", style = MaterialTheme.typography.titleLarge)
+        Text("@${profile.username}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Stat("DawgRank", profile.rank); Stat("RP", profile.rp.toString()); Stat("XP", profile.xp.toString())
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Stat("Streak", "${profile.streak}"); Stat("Battles", profile.battlesPlayed.toString()) }
+    } }
+}
+
+@Composable private fun Stat(label: String, value: String) { Column { Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant); Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold) } }
+
+@Composable
+private fun PublicRoomCard(room: Room, onClick: () -> Unit) { Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) { Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) { Column { Text(room.name, style = MaterialTheme.typography.titleMedium); Text("${room.playerCount}/${room.capacity} players · ${room.code}", color = MaterialTheme.colorScheme.onSurfaceVariant) }; Text("Join", color = MaterialTheme.colorScheme.primary) } } }

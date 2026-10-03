@@ -22,11 +22,14 @@ A gamified competitive study app where friends create lobbies, lock in, study, a
 
 The app runs with in-memory repositories when Firebase is not configured. To use Firebase:
 
-1. Create a Firebase project and add an Android app with package `com.topdawg.focusmaxxing`.
-2. Enable Email/Password, Google, and Anonymous providers in Authentication.
-3. Create a Cloud Firestore database and deploy the root `firestore.rules` rules.
-4. Download the Android `google-services.json` configuration and place it at `app/google-services.json`. This file is ignored by Git.
-5. In Firebase Console, open Project settings → General → Your apps → Web app configuration and copy the Web client ID. Put it in the ignored local file `local.properties` as `FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID=...`.
-6. Build and run with `./gradlew assembleDebug`.
+1. Create a Firebase project, then add an Android app with package `com.topdawg.focusmaxxing`.
+2. Add your local signing certificate SHA-1 to the Android app in Project settings. Run `./gradlew signingReport` to get the debug SHA-1.
+3. In **Authentication → Sign-in method**, enable **Email/Password**, **Google**, and **Anonymous**. Save the Google provider's Web client ID for step 6.
+4. In **Firestore Database**, create a Native mode database. Publish the root `firestore.rules` contents in the Firestore Rules tab, or deploy them with the Firebase CLI after selecting this project (`firebase deploy --only firestore:rules`).
+5. Download the Android config from **Project settings → General → Your apps** and place it at `app/google-services.json`. This file is ignored by Git, and the Google Services Gradle plugin is applied only when it exists.
+6. Put the Google provider's Web client ID from Authentication settings in the ignored root `local.properties` file as `FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com`. Keep any existing `sdk.dir` line in that file.
+7. Build and run with `./gradlew assembleDebug`.
+
+Use Android Studio's bundled JDK 17 or 21 for Gradle with the pinned Kotlin 2.0.21 toolchain.
 
 The Google Services Gradle plugin is applied only when `app/google-services.json` exists. Never commit Firebase configuration or signing secrets.
