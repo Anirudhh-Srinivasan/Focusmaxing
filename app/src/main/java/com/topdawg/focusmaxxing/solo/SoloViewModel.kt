@@ -31,7 +31,9 @@ data class SoloUiState(
     val remainingSeconds: Long = 0L,
     val loading: Boolean = false,
     val error: String? = null,
-    val isFakeAi: Boolean = false
+    val isFakeAi: Boolean = false,
+    val lastSegment: SoloSegmentRecord? = null,
+    val completedSession: SoloSessionRecord? = null
 )
 
 class SoloViewModel(
@@ -65,7 +67,10 @@ class SoloViewModel(
             try { repository.observeRecentSessions(uid).collect { _uiState.value = _uiState.value.copy(recentSessions = it) } }
             catch (error: Exception) { reportError(error.message ?: "Could not load recent study sessions.") }
         }
-        active?.let { startTicker() }
+        active?.let {
+            if (it.backgroundStartedAtMs != null) onAppForegrounded() else refreshSession()
+            startTicker()
+        }
     }
 
     fun openSolo() {
@@ -73,6 +78,7 @@ class SoloViewModel(
         if (active != null) {
             _uiState.value = _uiState.value.copy(activeSession = active, phase = if (active.checkpointActiveElapsedMs != null) SoloPhase.CHECKPOINT else SoloPhase.READER)
             startTicker()
+            refreshSession()
         } else {
             _uiState.value = _uiState.value.copy(phase = SoloPhase.SETUP, selectedMaterial = localStore.materials().firstOrNull(), materials = localStore.materials(), error = null)
         }
@@ -158,6 +164,7 @@ class SoloViewModel(
     fun onAppBackgrounded() {
         foreground = false
         val active = _uiState.value.activeSession ?: return
+        if (active.checkpointActiveElapsedMs != null) return
         val now = System.currentTimeMillis()
         val updated = active.copy(backgroundStartedAtMs = now)
         localStore.saveActiveSession(updated)
@@ -185,6 +192,142 @@ class SoloViewModel(
     fun onAlarmTriggered() {
         foreground = true
         refreshSession()
+    }
+
+    fun submitCheckpoint(fromPage: Int, toPage: Int, summary: String, nothingCovered: Boolean) {
+        viewModelScope.launch {
+            val active = localStore.activeSession() ?: return@launch reportError("The active session could not be found.")
+            val elapsed = active.checkpointActiveElapsedMs ?: return@launch reportError("This checkpoint is no longer active.")
+            val safeFrom = fromPage.coerceIn(1, active.material.pageCount)
+            val safeTo = toPage.coerceIn(1, active.material.pageCount)
+            if (safeTo < safeFrom) return@launch reportError("The end page must be the same as or after the start page.")
+            if (safeTo - safeFrom + 1 > SoloConstants.MAX_PAGES_PER_CHECKPOINT) return@launch reportError("A checkpoint can cover at most 60 pages.")
+            val words = Regex("\\b[\\w'-]+\\b").findAll(summary).count()
+            val sentences = summary.trim().split(Regex("(?<=[.!?])\\s+")).filter(String::isNotBlank).size
+            if (!nothingCovered && words !in SoloConstants.MIN_RECALL_WORDS..SoloConstants.MAX_RECALL_WORDS) {
+                return@launch reportError("Write 15–150 words about this segment.")
+            }
+            if (!nothingCovered && sentences !in SoloConstants.MIN_RECALL_SENTENCES..SoloConstants.MAX_RECALL_SENTENCES) {
+                return@launch reportError("Write 2–4 sentences about this segment.")
+            }
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+            try {
+                val activeSeconds = ((elapsed - active.segmentStartActiveMs).coerceAtLeast(0L) / 1_000L)
+                val grade = if (nothingCovered) null else recallAi.grade(active.material, active.topic, safeFrom, safeTo, summary.trim())
+                val wordsCovered = if (nothingCovered) 0 else grade?.wordsCovered ?: active.material.pageWordCounts.subList(safeFrom - 1, safeTo).sum()
+                val score = if (nothingCovered) SoloScoring.scoreSegment(0, activeSeconds, 0, active.currentSegmentInterruptions)
+                else SoloScoring.scoreSegment(wordsCovered, activeSeconds, grade?.recallScore ?: 0, active.currentSegmentInterruptions)
+                val segment = SoloSegmentRecord(
+                    fromPage = safeFrom,
+                    toPage = safeTo,
+                    pagesCovered = if (nothingCovered) 0 else safeTo - safeFrom + 1,
+                    wordsCovered = wordsCovered,
+                    activeSeconds = activeSeconds,
+                    recallScore = grade?.recallScore ?: 0,
+                    paceWpm = if (activeSeconds <= 0) 0 else (wordsCovered * 60.0 / activeSeconds).toInt(),
+                    interruptions = active.currentSegmentInterruptions,
+                    points = if (nothingCovered) 0 else score.points,
+                    feedback = if (nothingCovered) "No pages were recorded for this segment." else grade?.feedback.orEmpty(),
+                    keyPointsMissed = grade?.keyPointsMissed.orEmpty(),
+                    didNotCoverAnything = nothingCovered
+                )
+                var nextMaterial = active.material
+                if (grade?.refreshedMaterialId != null) nextMaterial = active.material.copy(backendMaterialId = grade.refreshedMaterialId)
+                if (nextMaterial != active.material) localStore.saveMaterial(nextMaterial)
+                val segments = active.completedSegments + segment
+                if (active.checkpointIsFinal) {
+                    val completed = buildSession(active.copy(material = nextMaterial, completedSegments = segments), abandoned = false)
+                    val uid = auth.currentUserId ?: error("Please sign in again to save your session.")
+                    val saved = repository.finishSession(uid, completed)
+                    localStore.clearActiveSession()
+                    SoloCheckpointAlarm.cancel(appContext)
+                    _uiState.value = _uiState.value.copy(phase = SoloPhase.SEGMENT_RESULT, activeSession = null, lastSegment = saved.segments.lastOrNull() ?: segment, completedSession = saved, loading = false, error = null)
+                } else {
+                    val now = System.currentTimeMillis()
+                    val paused = active.pausedAtMs?.let { (now - it).coerceAtLeast(0L) } ?: 0L
+                    val durationMs = active.durationSeconds * 1_000L
+                    val nextDue = nextDueElapsed(elapsed, durationMs)
+                    val resumed = active.copy(
+                        material = nextMaterial,
+                        completedSegments = segments,
+                        segmentFromPage = (safeTo + 1).coerceAtMost(active.material.pageCount),
+                        segmentStartActiveMs = elapsed,
+                        currentSegmentInterruptions = 0,
+                        accumulatedPauseMs = active.accumulatedPauseMs + paused,
+                        pausedAtMs = null,
+                        checkpointActiveElapsedMs = null,
+                        checkpointIsFinal = false,
+                        nextCheckpointAtActiveMs = nextDue
+                    )
+                    localStore.saveActiveSession(resumed)
+                    _uiState.value = _uiState.value.copy(phase = SoloPhase.SEGMENT_RESULT, activeSession = resumed, lastSegment = segment, loading = false, remainingSeconds = remainingSeconds(resumed, now), error = null)
+                    if (!foreground) SoloCheckpointAlarm.schedule(appContext, now + (nextDue - elapsed).coerceAtLeast(0L))
+                }
+            } catch (error: Exception) {
+                _uiState.value = _uiState.value.copy(loading = false, error = error.message ?: "Could not score this checkpoint. Your session is paused; retry when ready.")
+            }
+        }
+    }
+
+    fun continueAfterSegment() {
+        if (_uiState.value.completedSession != null) {
+            _uiState.value = _uiState.value.copy(phase = SoloPhase.RESULTS, error = null)
+            return
+        }
+        val active = localStore.activeSession() ?: return
+        _uiState.value = _uiState.value.copy(phase = SoloPhase.READER, activeSession = active, error = null)
+        startTicker()
+    }
+
+    fun leaveSession(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            val active = localStore.activeSession() ?: return@launch
+            try {
+                val abandoned = buildSession(active, abandoned = true)
+                val uid = auth.currentUserId ?: error("Please sign in again to save your session.")
+                repository.finishSession(uid, abandoned)
+                localStore.clearActiveSession()
+                SoloCheckpointAlarm.cancel(appContext)
+                _uiState.value = _uiState.value.copy(phase = SoloPhase.SETUP, activeSession = null, completedSession = null, error = null)
+                onComplete()
+            } catch (error: Exception) { reportError(error.message ?: "Could not save the finished checkpoints.") }
+        }
+    }
+
+    fun runItBack() {
+        val session = _uiState.value.completedSession ?: return
+        val material = localStore.materials().firstOrNull { it.localId == session.materialId } ?: return reportError("The saved material is unavailable on this device.")
+        _uiState.value = _uiState.value.copy(selectedMaterial = material)
+        prepareSession(session.topic, session.durationSeconds / 60, session.lastPageReached.coerceIn(1, material.pageCount))
+    }
+
+    private fun buildSession(active: ActiveSoloSession, abandoned: Boolean): SoloSessionRecord {
+        val now = System.currentTimeMillis()
+        val elapsedMs = active.checkpointActiveElapsedMs ?: activeElapsedMs(active, now)
+        val segments = active.completedSegments
+        val activeSeconds = (elapsedMs / 1_000L).coerceAtLeast(0L)
+        return SoloSessionRecord(
+            sessionId = active.sessionId,
+            topic = active.topic,
+            materialId = active.material.localId,
+            materialName = active.material.displayName,
+            startedAtMs = active.startedAtMs,
+            endedAtMs = now,
+            durationSeconds = active.durationSeconds,
+            activeSeconds = activeSeconds,
+            startPage = active.startPage,
+            lastPageReached = maxOf(active.lastPageReached, active.currentPage),
+            segments = segments,
+            totalWordsCovered = segments.sumOf { it.wordsCovered },
+            interruptions = segments.sumOf { it.interruptions } + active.currentSegmentInterruptions,
+            rawPoints = segments.sumOf { it.points },
+            totalPoints = 0,
+            counted = false,
+            abandoned = abandoned,
+            dateKey = LocalDate.now().toString(),
+            xpAfter = 0,
+            rankAfter = "Bronze"
+        )
     }
 
     fun reportError(message: String) {

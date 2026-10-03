@@ -9,6 +9,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,8 +35,11 @@ import com.topdawg.focusmaxxing.viewmodels.SoloViewModelFactory
 class MainActivity : ComponentActivity() {
     private lateinit var container: AppContainer
     private var soloViewModel: SoloViewModel? = null
+    private var checkpointLaunch by mutableStateOf(false)
+    companion object { const val EXTRA_OPEN_CHECKPOINT = "open_solo_checkpoint" }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        checkpointLaunch = intent.getBooleanExtra(EXTRA_OPEN_CHECKPOINT, false)
         container = AppContainer(this)
         setContent {
             FocusmaxxingTheme {
@@ -53,7 +58,9 @@ class MainActivity : ComponentActivity() {
                             val friendsViewModel: FriendsViewModel = viewModel(key = "friends_$uid", factory = FriendsViewModelFactory(container))
                             val solo: SoloViewModel = viewModel(key = "solo_$uid", factory = SoloViewModelFactory(container))
                             soloViewModel = solo
-                            NavGraph(navController, homeViewModel, lobbyViewModel, friendsViewModel, authViewModel, solo, container.auth.isGuest)
+                            NavGraph(navController, homeViewModel, lobbyViewModel, friendsViewModel, authViewModel, solo, container.auth.isGuest, checkpointLaunch) {
+                                checkpointLaunch = false
+                            }
                         }
                     }
                 }
@@ -69,5 +76,11 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         soloViewModel?.onAppForegrounded()
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_OPEN_CHECKPOINT, false)) checkpointLaunch = true
     }
 }

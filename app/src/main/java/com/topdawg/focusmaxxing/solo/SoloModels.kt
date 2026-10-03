@@ -51,7 +51,9 @@ data class SoloSessionRecord(
     val totalPoints: Int,
     val counted: Boolean,
     val abandoned: Boolean,
-    val dateKey: String
+    val dateKey: String,
+    val xpAfter: Int = 0,
+    val rankAfter: String = "Bronze"
 )
 
 @Serializable

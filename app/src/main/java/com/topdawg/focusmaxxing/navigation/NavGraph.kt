@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -38,9 +39,16 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun NavGraph(navController: NavHostController, homeViewModel: HomeViewModel, lobbyViewModel: LobbyViewModel, friendsViewModel: FriendsViewModel, authViewModel: AuthViewModel, soloViewModel: SoloViewModel, isGuest: Boolean) {
+fun NavGraph(navController: NavHostController, homeViewModel: HomeViewModel, lobbyViewModel: LobbyViewModel, friendsViewModel: FriendsViewModel, authViewModel: AuthViewModel, soloViewModel: SoloViewModel, isGuest: Boolean, openCheckpoint: Boolean, onCheckpointLaunchConsumed: () -> Unit) {
     var showUpgrade by remember { mutableStateOf(false) }
     val lobbyState by lobbyViewModel.uiState.collectAsState()
+    LaunchedEffect(openCheckpoint) {
+        if (openCheckpoint) {
+            soloViewModel.onAlarmTriggered()
+            navController.navigate(Screen.Solo.route) { launchSingleTop = true }
+            onCheckpointLaunchConsumed()
+        }
+    }
     Box(Modifier.fillMaxSize()) {
     NavHost(navController = navController, startDestination = Screen.Home.route) {
         composable(Screen.Home.route) {

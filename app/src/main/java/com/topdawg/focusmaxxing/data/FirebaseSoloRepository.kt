@@ -79,6 +79,8 @@ class FirebaseSoloRepository(private val db: FirebaseFirestore) : SoloRepository
         "counted" to counted,
         "abandoned" to abandoned,
         "dateKey" to dateKey,
+        "xpAfter" to xpAfter,
+        "rankAfter" to rankAfter,
         "updatedAt" to FieldValue.serverTimestamp()
     )
 
@@ -118,7 +120,9 @@ class FirebaseSoloRepository(private val db: FirebaseFirestore) : SoloRepository
             totalPoints = (getLong("totalPoints") ?: 0L).toInt(),
             counted = getBoolean("counted") ?: false,
             abandoned = getBoolean("abandoned") ?: false,
-            dateKey = getString("dateKey") ?: "1970-01-01"
+            dateKey = getString("dateKey") ?: "1970-01-01",
+            xpAfter = (getLong("xpAfter") ?: 0L).toInt(),
+            rankAfter = getString("rankAfter") ?: "Bronze"
         )
     }
 

@@ -25,6 +25,18 @@ object SoloSessionAccounting {
             soloPointsDate = if (qualifies) session.dateKey else profile.soloPointsDate,
             soloPointsToday = if (qualifies) alreadyToday + points else profile.soloPointsToday
         )
-        return SessionAccountingResult(updatedProfile, session.copy(totalPoints = points, counted = qualifies))
+        var segmentPointsRemaining = points
+        val creditedSegments = session.segments.map { segment ->
+            val credited = minOf(segment.points, segmentPointsRemaining)
+            segmentPointsRemaining -= credited
+            segment.copy(points = credited)
+        }
+        return SessionAccountingResult(updatedProfile, session.copy(
+            segments = creditedSegments,
+            totalPoints = points,
+            counted = qualifies,
+            xpAfter = updatedProfile.xp,
+            rankAfter = updatedProfile.rank
+        ))
     }
 }
