@@ -31,6 +31,7 @@ import com.topdawg.focusmaxxing.viewmodels.LobbyViewModel
 import com.topdawg.focusmaxxing.viewmodels.LobbyViewModelFactory
 import com.topdawg.focusmaxxing.solo.SoloViewModel
 import com.topdawg.focusmaxxing.viewmodels.SoloViewModelFactory
+import com.topdawg.focusmaxxing.solo.SoloCheckpointAlarm
 
 class MainActivity : ComponentActivity() {
     private lateinit var container: AppContainer
@@ -69,12 +70,14 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        SoloCheckpointAlarm.setAppForeground(false)
         soloViewModel?.onAppBackgrounded()
         super.onStop()
     }
 
     override fun onStart() {
         super.onStart()
+        SoloCheckpointAlarm.setAppForeground(true)
         soloViewModel?.onAppForegrounded()
     }
 

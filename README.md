@@ -25,20 +25,31 @@ The app uses in-memory repositories and a clearly marked fake recall grader when
 1. Create a Firebase project and register an Android app with package `com.topdawg.focusmaxxing`.
 2. Add your debug signing SHA-1 from `./gradlew signingReport` in Firebase project settings.
 3. In **Authentication → Sign-in method**, enable **Email/Password**, **Google**, and **Anonymous**.
-4. Create a Native mode Firestore database and publish the root `firestore.rules` contents, or deploy with the Firebase CLI.
+4. Create a Cloud Firestore database. In **Firestore Database → Rules**, paste the root `firestore.rules` contents and click **Publish**.
 5. Download Android config to `app/google-services.json` (ignored by Git).
 6. Add the Google provider Web client ID and, when using the backend, the base URL to ignored `local.properties`:
 
 ```properties
 FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
-FOCUSMAXXING_BACKEND_URL=https://your-service.up.railway.app
+FOCUSMAXXING_BACKEND_URL=http://10.0.2.2:8000
 ```
 
 Keep existing `sdk.dir` in `local.properties`. The Google Services plugin activates only when `app/google-services.json` exists. Use Android Studio's JDK 17 or 21 with the pinned Kotlin 2.0.21 toolchain.
 
+For fake mode, omit `app/google-services.json` and leave `FOCUSMAXXING_BACKEND_URL` unset. The app uses in-memory auth/room/friend/session repositories and a clearly labeled fake recall grader. For real Android + local backend mode, add Firebase config and use the emulator URL above; a physical device should use the development computer's LAN address instead. Debug builds permit cleartext HTTP for local testing only.
+
 ## Recall backend
 
 See [backend/README.md](backend/README.md) for local setup, environment variables, Firebase Admin configuration, and Railway deployment. The client computes points for now; **TODO: move scoring and XP/rank updates server-side before using public rankings**, since client-side scoring can be tampered with.
+
+The backend reads its settings from `backend/.env` locally or the deployment environment:
+
+- `GROQ_API_KEY` (required for real grading)
+- `GROQ_MODEL` (optional; defaults to `llama-3.3-70b-versatile`)
+- `DEV_AUTH=1` for local development only; Railway must use `DEV_AUTH=0`
+- `FIREBASE_PROJECT_ID` and `FIREBASE_SERVICE_ACCOUNT_JSON` for Firebase ID-token verification in real mode
+
+Android reads `FOCUSMAXXING_BACKEND_URL` and `FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID` from ignored root `local.properties`. Firebase Admin credentials belong only in the backend environment, never in Android or Git.
 
 ## Scoring and data notes
 

@@ -68,6 +68,9 @@ class FirebaseSoloRepository(private val db: FirebaseFirestore) : SoloRepository
             "paceWpm" to segment.paceWpm,
             "interruptions" to segment.interruptions,
             "points" to segment.points,
+            "cappedWords" to segment.cappedWords,
+            "recallFactor" to segment.recallFactor,
+            "focusFactor" to segment.focusFactor,
             "feedback" to segment.feedback,
             "keyPointsMissed" to segment.keyPointsMissed,
             "didNotCoverAnything" to segment.didNotCoverAnything
@@ -109,6 +112,9 @@ class FirebaseSoloRepository(private val db: FirebaseFirestore) : SoloRepository
                     paceWpm = map.long("paceWpm").toInt(),
                     interruptions = map.long("interruptions").toInt(),
                     points = map.long("points").toInt(),
+                    cappedWords = map.long("cappedWords").toInt(),
+                    recallFactor = map.decimal("recallFactor"),
+                    focusFactor = map.decimal("focusFactor"),
                     feedback = map["feedback"] as? String ?: "",
                     keyPointsMissed = (map["keyPointsMissed"] as? List<*>)?.mapNotNull { it as? String }.orEmpty(),
                     didNotCoverAnything = map["didNotCoverAnything"] as? Boolean ?: false
@@ -127,4 +133,5 @@ class FirebaseSoloRepository(private val db: FirebaseFirestore) : SoloRepository
     }
 
     private fun Map<*, *>.long(key: String): Long = (this[key] as? Number)?.toLong() ?: 0L
+    private fun Map<*, *>.decimal(key: String): Double = (this[key] as? Number)?.toDouble() ?: 0.0
 }

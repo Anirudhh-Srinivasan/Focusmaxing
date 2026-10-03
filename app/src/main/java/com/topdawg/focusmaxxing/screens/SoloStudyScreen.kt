@@ -8,6 +8,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -48,7 +50,7 @@ fun SoloStudyScreen(viewModel: SoloViewModel, onBack: () -> Unit) {
     }
 
     when (state.phase) {
-        SoloPhase.SETUP -> Column(Modifier.fillMaxSize().padding(16.dp)) {
+        SoloPhase.SETUP -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
             TextButton(onClick = onBack) { Text("Back") }
             Text("Solo Battle", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(12.dp))
@@ -82,6 +84,19 @@ fun SoloStudyScreen(viewModel: SoloViewModel, onBack: () -> Unit) {
                 viewModel.prepareSession(topic, duration, startPage.toIntOrNull() ?: -1)
             }, modifier = Modifier.fillMaxWidth()) { Text("Start session") }
             if (state.activeSession != null) TextButton(onClick = { viewModel.openSolo() }) { Text("Resume active session") }
+            Spacer(Modifier.height(18.dp))
+            Text("Recent solo sessions", style = MaterialTheme.typography.titleLarge)
+            if (state.historyLoading && state.recentSessions.isEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (!state.historyLoading && state.recentSessions.isEmpty()) Text("Your completed study sessions will appear here.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            state.historyError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            if (state.historyError != null) TextButton(onClick = viewModel::retryHistory) { Text("Retry loading history") }
+            state.recentSessions.forEach { session ->
+                Card(Modifier.fillMaxWidth().padding(top = 8.dp)) { Column(Modifier.padding(12.dp)) {
+                    Text(session.topic, style = MaterialTheme.typography.titleMedium)
+                    Text("${session.materialName} · ${java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(java.util.Date(session.endedAtMs))}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${session.totalPoints} XP · ${session.totalWordsCovered} words${if (session.abandoned) " · left early" else ""}")
+                } }
+            }
         }
         SoloPhase.COUNTDOWN -> CountdownScreen(onFinished = viewModel::beginSession)
         SoloPhase.READER -> {
@@ -93,7 +108,9 @@ fun SoloStudyScreen(viewModel: SoloViewModel, onBack: () -> Unit) {
                     state.remainingSeconds,
                     active.currentPage,
                     onCurrentPage = viewModel::updateCurrentPage,
-                    onLeaveRequested = { confirmLeave = true }
+                    onLeaveRequested = { confirmLeave = true },
+                    error = state.error,
+                    leaving = state.loading
                 )
             }
         }
@@ -136,14 +153,15 @@ private fun CountdownScreen(onFinished: () -> Unit) {
 }
 
 @Composable
-private fun ReaderScreen(material: SoloMaterial, remaining: Long, currentPage: Int, onCurrentPage: (Int) -> Unit, onLeaveRequested: () -> Unit) {
+private fun ReaderScreen(material: SoloMaterial, remaining: Long, currentPage: Int, onCurrentPage: (Int) -> Unit, onLeaveRequested: () -> Unit, error: String?, leaving: Boolean) {
     val context = LocalContext.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = (currentPage - 1).coerceIn(0, material.pageCount - 1))
-    val textPages by produceState(initialValue = emptyList<String>(), material.localId) {
-        value = if (material.isPdf) emptyList() else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching { com.topdawg.focusmaxxing.solo.SoloMaterialFiles.splitTxtIntoPages(File(material.localPath).readText(Charsets.UTF_8)) }.getOrDefault(emptyList())
+    val textResult by produceState<Result<List<String>>>(Result.success(emptyList()), material.localId) {
+        value = if (material.isPdf) Result.success(emptyList()) else runCatching {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.topdawg.focusmaxxing.solo.SoloMaterialFiles.splitTxtIntoPages(File(material.localPath).readText(Charsets.UTF_8)) }
         }
     }
+    val textPages = textResult.getOrNull().orEmpty()
     LaunchedEffect(listState) {
         snapshotFlow {
             val info = listState.layoutInfo
@@ -155,15 +173,21 @@ private fun ReaderScreen(material: SoloMaterial, remaining: Long, currentPage: I
     }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = onLeaveRequested) { Text("Leave") }
+            TextButton(onClick = onLeaveRequested, enabled = !leaving) { Text(if (leaving) "Saving…" else "Leave") }
             Text("${remaining / 60}:${(remaining % 60).toString().padStart(2, '0')}", style = MaterialTheme.typography.titleMedium)
             Text("Page $currentPage/${material.pageCount}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
         }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 12.dp)) }
         if (material.isPdf) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(material.pageCount) { index ->
                     PdfPage(material.localPath, index, Modifier.fillMaxWidth())
                 }
+            }
+        } else if (textResult.isFailure) {
+            Column(Modifier.padding(20.dp)) {
+                Text("Could not read this text material from private storage.", color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = onLeaveRequested) { Text("Leave session") }
             }
         } else {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
@@ -179,11 +203,16 @@ private fun ReaderScreen(material: SoloMaterial, remaining: Long, currentPage: I
 
 @Composable
 private fun PdfPage(path: String, pageIndex: Int, modifier: Modifier = Modifier) {
-    val bitmap by produceState<Bitmap?>(null, path, pageIndex) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { PdfBitmapCache.render(path, pageIndex) }
+    var retry by remember { mutableIntStateOf(0) }
+    val result by produceState<Result<Bitmap?>?>(null, path, pageIndex, retry) {
+        value = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { PdfBitmapCache.render(path, pageIndex) } }
     }
+    val bitmap = result?.getOrNull()
     if (bitmap != null) Image(bitmap!!.asImageBitmap(), "PDF page ${pageIndex + 1}", modifier = modifier.heightIn(min = 400.dp))
-    else Box(modifier.height(480.dp), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }
+    else if (result?.isFailure == true) Column(modifier.padding(16.dp)) {
+        Text("Could not render page ${pageIndex + 1}.", color = MaterialTheme.colorScheme.error)
+        TextButton(onClick = { retry++ }) { Text("Retry") }
+    } else Box(modifier.height(480.dp), contentAlignment = androidx.compose.ui.Alignment.Center) { CircularProgressIndicator() }
 }
 
 private object PdfBitmapCache {
@@ -272,7 +301,7 @@ private fun SegmentResultScreen(segment: com.topdawg.focusmaxxing.solo.SoloSegme
         Text("Scores are estimates${if (fake) " · FAKE/DEV ONLY" else ""}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(if (segment.didNotCoverAnything) "No pages covered" else "Pages ${segment.fromPage}–${segment.toPage}", style = MaterialTheme.typography.titleMedium)
-            Text("${segment.activeSeconds / 60} min · ${segment.paceWpm} words/min · recall ${segment.recallScore}%")
+            Text("${segment.wordsCovered} words · ${segment.activeSeconds / 60} min · ${segment.paceWpm} words/min · recall ${segment.recallScore}%")
             Text("${segment.points} points", style = MaterialTheme.typography.titleLarge)
             Text(segment.feedback)
             if (segment.keyPointsMissed.isNotEmpty()) {

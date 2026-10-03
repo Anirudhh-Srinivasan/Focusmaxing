@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import com.topdawg.focusmaxxing.data.Room
 import com.topdawg.focusmaxxing.data.UserProfile
 import com.topdawg.focusmaxxing.viewmodels.HomeViewModel
+import com.topdawg.focusmaxxing.solo.SoloScoring
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,15 +48,20 @@ fun HomeScreen(viewModel: HomeViewModel, isGuest: Boolean, roomActionLoading: Bo
 
 @Composable
 fun StatsCard(profile: UserProfile) {
+    val rank = SoloScoring.rankForXp(profile.xp).label
+    val streak = profile.lastCountedSessionDate?.let { key ->
+        val last = runCatching { LocalDate.parse(key) }.getOrNull()
+        if (last != null && last.isBefore(LocalDate.now().minusDays(1))) 0 else profile.streak
+    } ?: profile.streak
     Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(18.dp)) {
         Text("Your stats", style = MaterialTheme.typography.titleLarge)
         Text("@${profile.username}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Stat("DawgRank", profile.rank); Stat("RP", profile.rp.toString()); Stat("XP", profile.xp.toString())
+            Stat("DawgRank", rank); Stat("XP", profile.xp.toString())
         }
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Stat("Streak", "${profile.streak}"); Stat("Battles", profile.battlesPlayed.toString()) }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Stat("Streak", "$streak days"); Stat("Sessions", profile.sessionsPlayed.toString()) }
     } }
 }
 

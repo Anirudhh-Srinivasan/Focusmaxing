@@ -27,6 +27,9 @@ data class SoloSegmentRecord(
     val paceWpm: Int,
     val interruptions: Int,
     val points: Int,
+    val cappedWords: Int = 0,
+    val recallFactor: Double = 0.0,
+    val focusFactor: Double = 1.0,
     val feedback: String,
     val keyPointsMissed: List<String>,
     val didNotCoverAnything: Boolean

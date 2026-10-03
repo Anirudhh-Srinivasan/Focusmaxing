@@ -28,6 +28,8 @@ data class SoloUiState(
     val selectedMaterial: SoloMaterial? = null,
     val activeSession: ActiveSoloSession? = null,
     val recentSessions: List<SoloSessionRecord> = emptyList(),
+    val historyLoading: Boolean = true,
+    val historyError: String? = null,
     val remainingSeconds: Long = 0L,
     val loading: Boolean = false,
     val error: String? = null,
@@ -48,6 +50,7 @@ class SoloViewModel(
     val uiState: StateFlow<SoloUiState> = _uiState.asStateFlow()
     private var pendingStart: PendingStart? = null
     private var ticker: Job? = null
+    private var historyJob: Job? = null
     private var foreground = true
 
     fun currentState(): SoloUiState = _uiState.value
@@ -59,14 +62,11 @@ class SoloViewModel(
             materials = materials,
             selectedMaterial = materials.firstOrNull(),
             activeSession = active,
+            historyLoading = auth.currentUserId != null,
             phase = if (active == null) SoloPhase.SETUP else if (active.checkpointActiveElapsedMs != null) SoloPhase.CHECKPOINT else SoloPhase.READER,
             remainingSeconds = active?.let { remainingSeconds(it, System.currentTimeMillis()) } ?: 0L
         )
-        val uid = auth.currentUserId
-        if (uid != null) viewModelScope.launch {
-            try { repository.observeRecentSessions(uid).collect { _uiState.value = _uiState.value.copy(recentSessions = it) } }
-            catch (error: Exception) { reportError(error.message ?: "Could not load recent study sessions.") }
-        }
+        if (auth.currentUserId != null) observeHistory() else _uiState.value = _uiState.value.copy(historyLoading = false)
         active?.let {
             if (it.backgroundStartedAtMs != null) onAppForegrounded() else refreshSession()
             startTicker()
@@ -81,6 +81,18 @@ class SoloViewModel(
             refreshSession()
         } else {
             _uiState.value = _uiState.value.copy(phase = SoloPhase.SETUP, selectedMaterial = localStore.materials().firstOrNull(), materials = localStore.materials(), error = null)
+        }
+    }
+
+    fun retryHistory() = observeHistory()
+
+    private fun observeHistory() {
+        val uid = auth.currentUserId ?: return
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(historyLoading = true, historyError = null)
+            try { repository.observeRecentSessions(uid).collect { _uiState.value = _uiState.value.copy(recentSessions = it, historyLoading = false, historyError = null) } }
+            catch (error: Exception) { _uiState.value = _uiState.value.copy(historyLoading = false, historyError = error.message ?: "Could not load recent study sessions.") }
         }
     }
 
@@ -227,6 +239,9 @@ class SoloViewModel(
                     paceWpm = if (activeSeconds <= 0) 0 else (wordsCovered * 60.0 / activeSeconds).toInt(),
                     interruptions = active.currentSegmentInterruptions,
                     points = if (nothingCovered) 0 else score.points,
+                    cappedWords = score.cappedWords,
+                    recallFactor = score.recallFactor,
+                    focusFactor = score.focusFactor,
                     feedback = if (nothingCovered) "No pages were recorded for this segment." else grade?.feedback.orEmpty(),
                     keyPointsMissed = grade?.keyPointsMissed.orEmpty(),
                     didNotCoverAnything = nothingCovered
@@ -282,13 +297,14 @@ class SoloViewModel(
     fun leaveSession(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             val active = localStore.activeSession() ?: return@launch
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 val abandoned = buildSession(active, abandoned = true)
                 val uid = auth.currentUserId ?: error("Please sign in again to save your session.")
                 repository.finishSession(uid, abandoned)
                 localStore.clearActiveSession()
                 SoloCheckpointAlarm.cancel(appContext)
-                _uiState.value = _uiState.value.copy(phase = SoloPhase.SETUP, activeSession = null, completedSession = null, error = null)
+                _uiState.value = _uiState.value.copy(phase = SoloPhase.SETUP, activeSession = null, completedSession = null, loading = false, error = null)
                 onComplete()
             } catch (error: Exception) { reportError(error.message ?: "Could not save the finished checkpoints.") }
         }

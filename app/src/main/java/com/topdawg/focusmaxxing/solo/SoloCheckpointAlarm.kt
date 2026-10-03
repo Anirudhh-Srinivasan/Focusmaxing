@@ -8,6 +8,10 @@ import android.content.Intent
 object SoloCheckpointAlarm {
     const val ACTION_CHECKPOINT_DUE = "com.topdawg.focusmaxxing.SOLO_CHECKPOINT_DUE"
     const val ACTION_REFRESH_SESSION = "com.topdawg.focusmaxxing.SOLO_REFRESH_SESSION"
+    @Volatile private var appForeground = false
+
+    fun setAppForeground(value: Boolean) { appForeground = value }
+    fun isAppForeground(): Boolean = appForeground
 
     fun schedule(context: Context, triggerAtMs: Long) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)

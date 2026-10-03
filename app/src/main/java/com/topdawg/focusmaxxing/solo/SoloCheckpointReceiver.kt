@@ -3,7 +3,6 @@ package com.topdawg.focusmaxxing.solo
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
@@ -14,10 +13,7 @@ import com.topdawg.focusmaxxing.MainActivity
 class SoloCheckpointReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action != SoloCheckpointAlarm.ACTION_CHECKPOINT_DUE) return
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val processInfo = ActivityManager.RunningAppProcessInfo()
-        ActivityManager.getMyMemoryState(processInfo)
-        if (processInfo.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return
+        if (SoloCheckpointAlarm.isAppForeground()) return
         if (Build.VERSION.SDK_INT >= 26) {
             val manager = context.getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(NotificationChannel(SoloConstants.NOTIFICATION_CHANNEL_ID, "Study checkpoints", NotificationManager.IMPORTANCE_DEFAULT))
