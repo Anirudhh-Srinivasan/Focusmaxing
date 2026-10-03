@@ -1,0 +1,16 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+
+# Android Studio / IntelliJ
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local Firebase configuration and signing material
+app/google-services.json
+*.jks
+*.keystore
