@@ -167,8 +167,8 @@ class FirebaseRoomRepository(private val db: FirebaseFirestore, private val auth
         awaitClose { roomListener.remove(); playersListener.remove() }
     }
     override fun observePublicRooms(): Flow<List<Room>> = callbackFlow {
-        val listener = db.collection("rooms").whereEqualTo("isPublic", true).whereEqualTo("status", "waiting").addSnapshotListener { snapshots, error ->
-            if (error != null) close(error) else trySend(snapshots?.documents.orEmpty().map { d -> Room(d.id, d.getString("name") ?: "Room", d.getString("hostId") ?: "", true, (d.getLong("capacity") ?: 3L).toInt(), playerCount = (d.getLong("playerCount") ?: 0L).toInt()) })
+        val listener = db.collection("rooms").whereEqualTo("isPublic", true).addSnapshotListener { snapshots, error ->
+            if (error != null) close(error) else trySend(snapshots?.documents.orEmpty().filter { it.getString("status") == "waiting" }.map { d -> Room(d.id, d.getString("name") ?: "Room", d.getString("hostId") ?: "", true, (d.getLong("capacity") ?: 3L).toInt(), playerCount = (d.getLong("playerCount") ?: 0L).toInt()) })
         }
         awaitClose { listener.remove() }
     }
@@ -204,8 +204,8 @@ class FirebaseFriendRepository(private val db: FirebaseFirestore, private val au
     }
     override fun observeRequests(): Flow<List<FriendRequest>> = callbackFlow {
         val uid = auth.currentUserId ?: run { trySend(emptyList()); close(); return@callbackFlow }
-        val listener = db.collection("friendRequests").whereEqualTo("toUid", uid).whereEqualTo("status", "pending").addSnapshotListener { s, e ->
-            if (e != null) close(e) else trySend(s?.documents.orEmpty().map { FriendRequest(it.id, it.getString("fromUid") ?: "", it.getString("fromUsername") ?: "", uid, it.getString("toUsername") ?: "") })
+        val listener = db.collection("friendRequests").whereEqualTo("toUid", uid).addSnapshotListener { s, e ->
+            if (e != null) close(e) else trySend(s?.documents.orEmpty().filter { it.getString("status") == "pending" }.map { FriendRequest(it.id, it.getString("fromUid") ?: "", it.getString("fromUsername") ?: "", uid, it.getString("toUsername") ?: "") })
         }
         awaitClose { listener.remove() }
     }
