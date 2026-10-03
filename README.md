@@ -1,35 +1,45 @@
 # Focusmaxxing
 
-A gamified competitive study app where friends create lobbies, lock in, study, and get ranked.
+A gamified study app for solo reading sessions and friend lobbies.
 
 ## Features
 
-- Email/password, Google, and guest sign-in
-- Unique usernames and account upgrades for guests
-- User stats summary and public lobby discovery
-- Create or join private/public study rooms with six-character codes
-- Live room roster and host handoff when someone leaves
-- Username search, friend requests, and read-only friend profiles
-- Firebase-backed repositories with in-memory development fakes
+- Email/password, Google, and guest sign-in with unique usernames
+- Home stats, public lobbies, and six-character private/public study rooms
+- Solo study sessions from one PDF or TXT material, with timed reading and recall checkpoints
+- AI-assisted recall estimates, segment scoring, rank progress, and recent session history
+- Friend requests, read-only profiles, and an XP leaderboard
+- Firebase-backed repositories with in-memory development fakes when Firebase/backend config is absent
 
 ## Stack
 
-- Kotlin, Jetpack Compose, Material 3
-- MVVM with StateFlow, repository interfaces, and a small app container
-- Firebase Authentication and Cloud Firestore (optional local configuration)
+- Kotlin, Jetpack Compose, Material 3, MVVM, StateFlow, repositories, and a small `AppContainer`
+- Firebase Authentication and Cloud Firestore for accounts, rooms, friends, and saved stats
+- Android `PdfRenderer` for PDFs and app-private local material/session storage
+- Python, FastAPI, pypdf, Firebase Admin token verification, and Groq for recall grading
 
-## Setup
+## Android setup
 
-The app runs with in-memory repositories when Firebase is not configured. To use Firebase:
+The app uses in-memory repositories and a clearly marked fake recall grader when Firebase config or backend URL is missing.
 
-1. Create a Firebase project, then add an Android app with package `com.topdawg.focusmaxxing`.
-2. Add your local signing certificate SHA-1 to the Android app in Project settings. Run `./gradlew signingReport` to get the debug SHA-1.
-3. In **Authentication → Sign-in method**, enable **Email/Password**, **Google**, and **Anonymous**. Save the Google provider's Web client ID for step 6.
-4. In **Firestore Database**, create a Native mode database. Publish the root `firestore.rules` contents in the Firestore Rules tab, or deploy them with the Firebase CLI after selecting this project (`firebase deploy --only firestore:rules`).
-5. Download the Android config from **Project settings → General → Your apps** and place it at `app/google-services.json`. This file is ignored by Git, and the Google Services Gradle plugin is applied only when it exists.
-6. Put the Google provider's Web client ID from Authentication settings in the ignored root `local.properties` file as `FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com`. Keep any existing `sdk.dir` line in that file.
-7. Build and run with `./gradlew assembleDebug`.
+1. Create a Firebase project and register an Android app with package `com.topdawg.focusmaxxing`.
+2. Add your debug signing SHA-1 from `./gradlew signingReport` in Firebase project settings.
+3. In **Authentication → Sign-in method**, enable **Email/Password**, **Google**, and **Anonymous**.
+4. Create a Native mode Firestore database and publish the root `firestore.rules` contents, or deploy with the Firebase CLI.
+5. Download Android config to `app/google-services.json` (ignored by Git).
+6. Add the Google provider Web client ID and, when using the backend, the base URL to ignored `local.properties`:
 
-Use Android Studio's bundled JDK 17 or 21 for Gradle with the pinned Kotlin 2.0.21 toolchain.
+```properties
+FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
+FOCUSMAXXING_BACKEND_URL=https://your-service.up.railway.app
+```
 
-The Google Services Gradle plugin is applied only when `app/google-services.json` exists. Never commit Firebase configuration or signing secrets.
+Keep existing `sdk.dir` in `local.properties`. The Google Services plugin activates only when `app/google-services.json` exists. Use Android Studio's JDK 17 or 21 with the pinned Kotlin 2.0.21 toolchain.
+
+## Recall backend
+
+See [backend/README.md](backend/README.md) for local setup, environment variables, Firebase Admin configuration, and Railway deployment. The client computes points for now; **TODO: move scoring and XP/rank updates server-side before using public rankings**, since client-side scoring can be tampered with.
+
+## Scoring and data notes
+
+Tunable Android scoring values live in `SoloConstants.kt`. Segment scores are estimates, not an exact measurement of study quality. Material text on the backend is held in memory for three hours and uploaded again by Android after a backend restart. Never commit Firebase configuration, service-account keys, `.env`, or other secrets.

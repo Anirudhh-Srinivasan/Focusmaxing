@@ -14,3 +14,11 @@ captures/
 app/google-services.json
 *.jks
 *.keystore
+
+# Backend secrets
+**/.env
+**/*.service-account.json
+*.pem
+__pycache__/
+.pytest_cache/
+**/.venv/
