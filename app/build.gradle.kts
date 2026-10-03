@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 if (file("google-services.json").exists()) {
@@ -26,6 +27,9 @@ android {
         val webClientId = localConfig.getProperty("FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID", "")
             .replace("\\", "\\\\").replace("\"", "\\\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$webClientId\"")
+        val backendUrl = localConfig.getProperty("FOCUSMAXXING_BACKEND_URL", "")
+            .replace("\\", "\\\\").replace("\"", "\\\"")
+        buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
     }
 
     buildFeatures {
@@ -67,6 +71,8 @@ dependencies {
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     testImplementation("junit:junit:4.13.2")
 

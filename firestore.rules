@@ -17,7 +17,7 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid;
       allow update: if owns(uid)
         && request.resource.data.username == resource.data.username
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isGuest', 'dawgRank', 'rp', 'xp', 'streak', 'battlesPlayed', 'createdAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isGuest', 'dawgRank', 'rp', 'xp', 'streak', 'battlesPlayed', 'sessionsPlayed', 'lastCountedSessionDate', 'soloPointsDate', 'soloPointsToday', 'createdAt']);
       allow delete: if false;
 
       match /friends/{friendUid} {
@@ -28,6 +28,10 @@ service cloud.firestore {
             || getAfter(/databases/$(database)/documents/friendRequests/$(friendUid + '_' + uid)).data.status == 'accepted');
         allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == friendUid);
         allow update: if false;
+      }
+
+      match /sessions/{sessionId} {
+        allow read, write: if owns(uid);
       }
     }
 

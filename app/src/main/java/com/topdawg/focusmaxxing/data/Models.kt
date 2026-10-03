@@ -10,7 +10,11 @@ data class UserProfile(
     val rp: Int = 0,
     val xp: Int = 0,
     val streak: Int = 0,
-    val battlesPlayed: Int = 0
+    val battlesPlayed: Int = 0,
+    val sessionsPlayed: Int = 0,
+    val lastCountedSessionDate: String? = null,
+    val soloPointsDate: String? = null,
+    val soloPointsToday: Int = 0
 )
 
 data class Room(
@@ -36,5 +40,9 @@ fun DocumentSnapshot.toUserProfile(): UserProfile = UserProfile(
     rp = getLong("rp")?.toInt() ?: 0,
     xp = getLong("xp")?.toInt() ?: 0,
     streak = getLong("streak")?.toInt() ?: 0,
-    battlesPlayed = getLong("battlesPlayed")?.toInt() ?: 0
+    battlesPlayed = getLong("battlesPlayed")?.toInt() ?: 0,
+    sessionsPlayed = getLong("sessionsPlayed")?.toInt() ?: 0,
+    lastCountedSessionDate = getString("lastCountedSessionDate"),
+    soloPointsDate = getString("soloPointsDate"),
+    soloPointsToday = getLong("soloPointsToday")?.toInt() ?: 0
 )

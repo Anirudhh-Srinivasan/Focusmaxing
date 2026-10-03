@@ -18,7 +18,7 @@ import com.topdawg.focusmaxxing.viewmodels.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, isGuest: Boolean, roomActionLoading: Boolean, roomActionError: String?, clearRoomActionError: () -> Unit, onNavigateToCreate: () -> Unit, onNavigateToJoin: () -> Unit, onJoinPublic: (String) -> Unit, onFriends: () -> Unit, onRequests: () -> Unit, onUpgrade: () -> Unit, onSignOut: () -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel, isGuest: Boolean, roomActionLoading: Boolean, roomActionError: String?, clearRoomActionError: () -> Unit, onNavigateToCreate: () -> Unit, onNavigateToJoin: () -> Unit, onJoinPublic: (String) -> Unit, onFriends: () -> Unit, onRequests: () -> Unit, onUpgrade: () -> Unit, onSolo: () -> Unit, onSignOut: () -> Unit) {
     val state by viewModel.uiState.collectAsState()
     Scaffold(topBar = { TopAppBar(title = { Text("Focusmaxxing", fontWeight = FontWeight.Bold) }, actions = {
         IconButton(onClick = onFriends) { Icon(Icons.Default.People, contentDescription = "Friends") }
@@ -28,6 +28,7 @@ fun HomeScreen(viewModel: HomeViewModel, isGuest: Boolean, roomActionLoading: Bo
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { state.profile?.let { StatsCard(it) } ?: Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(20.dp)) { if (state.profileLoading) CircularProgressIndicator() else Text(state.error ?: "Your stats are unavailable.", color = MaterialTheme.colorScheme.error); if (!state.profileLoading) TextButton(onClick = viewModel::refreshProfile) { Text("Retry") } } } }
             if (isGuest) item { TextButton(onClick = onUpgrade) { Text("Upgrade account to keep your progress") } }
+            item { Button(onClick = onSolo, modifier = Modifier.fillMaxWidth()) { Text("Solo Battle") } }
             item { Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = onNavigateToCreate, modifier = Modifier.weight(1f)) { Text("Create Lobby") }
                 OutlinedButton(onClick = onNavigateToJoin, modifier = Modifier.weight(1f)) { Text("Join with Code") }

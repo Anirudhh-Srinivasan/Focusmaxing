@@ -60,7 +60,7 @@ class FirebaseUserRepository(private val db: FirebaseFirestore) : UserRepository
             if (old != null && old != normalized) throw IllegalStateException("This account already has a username.")
             val profile = tx.get(userRef).toUserProfileOrNew(uid)
             tx.set(usernameRef, mapOf("uid" to uid, "createdAt" to FieldValue.serverTimestamp()))
-            tx.set(userRef, mapOf("username" to normalized, "isGuest" to (authIsGuest(uid)), "dawgRank" to profile.rank, "rp" to profile.rp, "xp" to profile.xp, "streak" to profile.streak, "battlesPlayed" to profile.battlesPlayed, "createdAt" to FieldValue.serverTimestamp()), com.google.firebase.firestore.SetOptions.merge())
+            tx.set(userRef, mapOf("username" to normalized, "isGuest" to (authIsGuest(uid)), "dawgRank" to profile.rank, "rp" to profile.rp, "xp" to profile.xp, "streak" to profile.streak, "battlesPlayed" to profile.battlesPlayed, "sessionsPlayed" to profile.sessionsPlayed, "soloPointsToday" to profile.soloPointsToday, "createdAt" to FieldValue.serverTimestamp()), com.google.firebase.firestore.SetOptions.merge())
             profile.copy(username = normalized)
         }.await()
     }

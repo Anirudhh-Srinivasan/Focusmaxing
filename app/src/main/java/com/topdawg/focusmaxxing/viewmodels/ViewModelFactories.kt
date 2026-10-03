@@ -3,6 +3,7 @@ package com.topdawg.focusmaxxing.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.topdawg.focusmaxxing.data.AppContainer
+import com.topdawg.focusmaxxing.solo.SoloViewModel
 
 class AuthViewModelFactory(private val c: AppContainer) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T = AuthViewModel(c.auth, c.users) as T
@@ -15,4 +16,9 @@ class LobbyViewModelFactory(private val c: AppContainer) : ViewModelProvider.Fac
 }
 class FriendsViewModelFactory(private val c: AppContainer) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T = FriendsViewModel(c.auth, c.users, c.friends) as T
+}
+class SoloViewModelFactory(private val c: AppContainer) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T = SoloViewModel(
+        c.applicationContext, c.auth, c.solo, c.soloStore, c.soloMaterialFiles, c.recallAi
+    ) as T
 }

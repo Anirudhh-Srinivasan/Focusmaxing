@@ -7,13 +7,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
+import com.topdawg.focusmaxxing.solo.SoloConstants
+import com.topdawg.focusmaxxing.solo.SoloSessionAccounting
+import com.topdawg.focusmaxxing.solo.SoloSessionRecord
 
-class FakeRepositories : AuthRepository, UserRepository, RoomRepository, FriendRepository {
+class FakeRepositories : AuthRepository, UserRepository, RoomRepository, FriendRepository, SoloRepository {
     private val profiles = linkedMapOf<String, UserProfile>()
     private val rooms = MutableStateFlow<Map<String, Room>>(emptyMap())
     private val users = MutableStateFlow<Map<String, UserProfile>>(emptyMap())
     private val requests = MutableStateFlow<List<FriendRequest>>(emptyList())
     private val friendIds = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+    private val soloSessions = MutableStateFlow<Map<String, List<SoloSessionRecord>>>(emptyMap())
     private val sequence = AtomicLong()
     private var uid: String? = null
     private var guest = false
@@ -95,4 +99,16 @@ class FakeRepositories : AuthRepository, UserRepository, RoomRepository, FriendR
     }
     override fun observeRequests(): Flow<List<FriendRequest>> = requests.map { all -> all.filter { it.toUid == uid } }
     override fun observeFriends(): Flow<List<UserProfile>> = friendIds.map { ids -> ids[uid].orEmpty().mapNotNull { profiles[it] } }
+
+    override suspend fun finishSession(uid: String, session: SoloSessionRecord): SoloSessionRecord {
+        soloSessions.value[uid].orEmpty().firstOrNull { it.sessionId == session.sessionId }?.let { return it }
+        val profile = profiles[uid] ?: error("Your profile is unavailable.")
+        val result = SoloSessionAccounting.award(profile, session)
+        profiles[uid] = result.profile
+        users.value = profiles.toMap()
+        soloSessions.value = soloSessions.value + (uid to (listOf(result.session) + soloSessions.value[uid].orEmpty()).take(SoloConstants.HISTORY_LIMIT))
+        return result.session
+    }
+
+    override fun observeRecentSessions(uid: String): Flow<List<SoloSessionRecord>> = soloSessions.map { it[uid].orEmpty().take(SoloConstants.HISTORY_LIMIT) }
 }

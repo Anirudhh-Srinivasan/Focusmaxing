@@ -2,6 +2,30 @@ package com.topdawg.focusmaxxing.solo
 
 /** Tune all solo scoring thresholds and rank boundaries here. */
 object SoloConstants {
+    const val MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+    const val MAX_PDF_PAGES = 300
+    const val TXT_WORDS_PER_VIRTUAL_PAGE = 300
+    const val MIN_SESSION_MINUTES = 25
+    const val MAX_SESSION_MINUTES = 90
+    val SESSION_LENGTHS_MINUTES = listOf(25, 45, 60, 90)
+    const val COUNTDOWN_SECONDS = 3
+    const val MIN_CHECKPOINT_INTERVAL_MINUTES = 10
+    const val MAX_CHECKPOINT_INTERVAL_MINUTES = 15
+    const val MIN_REMAINING_MINUTES_FOR_CHECKPOINT = 5
+    const val MAX_PAGES_PER_CHECKPOINT = 60
+    const val MIN_RECALL_SENTENCES = 2
+    const val MAX_RECALL_SENTENCES = 4
+    const val MIN_RECALL_WORDS = 15
+    const val MAX_RECALL_WORDS = 150
+    const val PDF_BITMAP_CACHE_BYTES = 32 * 1024 * 1024
+    const val HISTORY_LIMIT = 10
+    const val SESSION_TICK_MS = 1_000L
+    const val NOTIFICATION_CHANNEL_ID = "solo-checkpoints"
+    const val NOTIFICATION_ID = 3107
+    const val BACKEND_CONNECT_TIMEOUT_SECONDS = 30L
+    const val BACKEND_READ_TIMEOUT_SECONDS = 90L
+    const val BACKEND_WRITE_TIMEOUT_SECONDS = 60L
+
     const val MAX_WPM = 400
     const val MIN_RECALL_SCORE_FOR_POINTS = 30
     const val FOCUS_PENALTY_PER_INTERRUPTION = 0.05

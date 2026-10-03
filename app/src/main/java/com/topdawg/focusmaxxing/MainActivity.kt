@@ -27,9 +27,12 @@ import com.topdawg.focusmaxxing.viewmodels.HomeViewModel
 import com.topdawg.focusmaxxing.viewmodels.HomeViewModelFactory
 import com.topdawg.focusmaxxing.viewmodels.LobbyViewModel
 import com.topdawg.focusmaxxing.viewmodels.LobbyViewModelFactory
+import com.topdawg.focusmaxxing.solo.SoloViewModel
+import com.topdawg.focusmaxxing.viewmodels.SoloViewModelFactory
 
 class MainActivity : ComponentActivity() {
     private lateinit var container: AppContainer
+    private var soloViewModel: SoloViewModel? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         container = AppContainer(this)
@@ -48,11 +51,23 @@ class MainActivity : ComponentActivity() {
                             val homeViewModel: HomeViewModel = viewModel(key = "home_$uid", factory = HomeViewModelFactory(container))
                             val lobbyViewModel: LobbyViewModel = viewModel(key = "lobby_$uid", factory = LobbyViewModelFactory(container))
                             val friendsViewModel: FriendsViewModel = viewModel(key = "friends_$uid", factory = FriendsViewModelFactory(container))
-                            NavGraph(navController, homeViewModel, lobbyViewModel, friendsViewModel, authViewModel, container.auth.isGuest)
+                            val solo: SoloViewModel = viewModel(key = "solo_$uid", factory = SoloViewModelFactory(container))
+                            soloViewModel = solo
+                            NavGraph(navController, homeViewModel, lobbyViewModel, friendsViewModel, authViewModel, solo, container.auth.isGuest)
                         }
                     }
                 }
             }
         }
+    }
+
+    override fun onStop() {
+        soloViewModel?.onAppBackgrounded()
+        super.onStop()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        soloViewModel?.onAppForegrounded()
     }
 }

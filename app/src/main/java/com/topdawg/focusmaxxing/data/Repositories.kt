@@ -2,6 +2,7 @@ package com.topdawg.focusmaxxing.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import com.topdawg.focusmaxxing.solo.SoloSessionRecord
 
 interface AuthRepository {
     val currentUserId: String?
@@ -39,4 +40,9 @@ interface FriendRepository {
     suspend fun removeFriend(friendUid: String)
     fun observeRequests(): Flow<List<FriendRequest>>
     fun observeFriends(): Flow<List<UserProfile>>
+}
+
+interface SoloRepository {
+    suspend fun finishSession(uid: String, session: SoloSessionRecord): SoloSessionRecord
+    fun observeRecentSessions(uid: String): Flow<List<SoloSessionRecord>>
 }

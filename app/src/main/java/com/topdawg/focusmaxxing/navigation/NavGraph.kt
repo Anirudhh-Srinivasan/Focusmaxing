@@ -24,6 +24,8 @@ import com.topdawg.focusmaxxing.viewmodels.AuthViewModel
 import com.topdawg.focusmaxxing.viewmodels.FriendsViewModel
 import com.topdawg.focusmaxxing.viewmodels.HomeViewModel
 import com.topdawg.focusmaxxing.viewmodels.LobbyViewModel
+import com.topdawg.focusmaxxing.solo.SoloViewModel
+import com.topdawg.focusmaxxing.screens.SoloStudyScreen
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
@@ -32,10 +34,11 @@ sealed class Screen(val route: String) {
     data object Lobby : Screen("lobby/{roomCode}") { fun createRoute(code: String) = "lobby/$code" }
     data object Friends : Screen("friends")
     data object Requests : Screen("requests")
+    data object Solo : Screen("solo")
 }
 
 @Composable
-fun NavGraph(navController: NavHostController, homeViewModel: HomeViewModel, lobbyViewModel: LobbyViewModel, friendsViewModel: FriendsViewModel, authViewModel: AuthViewModel, isGuest: Boolean) {
+fun NavGraph(navController: NavHostController, homeViewModel: HomeViewModel, lobbyViewModel: LobbyViewModel, friendsViewModel: FriendsViewModel, authViewModel: AuthViewModel, soloViewModel: SoloViewModel, isGuest: Boolean) {
     var showUpgrade by remember { mutableStateOf(false) }
     val lobbyState by lobbyViewModel.uiState.collectAsState()
     Box(Modifier.fillMaxSize()) {
@@ -48,6 +51,7 @@ fun NavGraph(navController: NavHostController, homeViewModel: HomeViewModel, lob
                 onFriends = { navController.navigate(Screen.Friends.route) },
                 onRequests = { navController.navigate(Screen.Requests.route) },
                 onUpgrade = { showUpgrade = true },
+                onSolo = { soloViewModel.openSolo(); navController.navigate(Screen.Solo.route) },
                 onSignOut = { authViewModel.signOut() })
         }
         composable(Screen.CreateLobby.route) { CreateLobbyScreen(lobbyViewModel, { navController.navigate(Screen.Lobby.createRoute(it)) }, { navController.popBackStack() }) }
@@ -57,6 +61,9 @@ fun NavGraph(navController: NavHostController, homeViewModel: HomeViewModel, lob
         }
         composable(Screen.Friends.route) { FriendsScreen(friendsViewModel, false, { navController.popBackStack() }, { showUpgrade = true }) }
         composable(Screen.Requests.route) { FriendsScreen(friendsViewModel, true, { navController.popBackStack() }, { showUpgrade = true }) }
+        composable(Screen.Solo.route) {
+            SoloStudyScreen(soloViewModel, onBack = { navController.popBackStack() })
+        }
     }
         if (showUpgrade) UpgradeAccountDialog(authViewModel) { showUpgrade = false }
     }
