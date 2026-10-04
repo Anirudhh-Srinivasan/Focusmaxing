@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.topdawg.focusmaxxing.BuildConfig
+import com.topdawg.focusmaxxing.ui.components.safeWindowInsets
 import com.topdawg.focusmaxxing.solo.SoloConstants
 import com.topdawg.focusmaxxing.solo.SoloMaterial
 import com.topdawg.focusmaxxing.solo.SoloPhase
@@ -51,7 +52,7 @@ fun SoloStudyScreen(viewModel: SoloViewModel, onBack: () -> Unit) {
     }
 
     when (state.phase) {
-        SoloPhase.SETUP -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+        SoloPhase.SETUP -> Column(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()).verticalScroll(rememberScrollState()).padding(16.dp)) {
             TextButton(onClick = onBack) { Text("Back") }
             Text("Solo Battle", style = MaterialTheme.typography.headlineSmall)
             Spacer(Modifier.height(12.dp))
@@ -152,7 +153,7 @@ private fun CountdownScreen(onFinished: () -> Unit) {
         kotlinx.coroutines.delay(1_000)
         onFinished()
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) { Text(seconds.toString(), style = MaterialTheme.typography.displayLarge) }
+    Box(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()), contentAlignment = androidx.compose.ui.Alignment.Center) { Text(seconds.toString(), style = MaterialTheme.typography.displayLarge) }
 }
 
 @Composable
@@ -174,7 +175,9 @@ private fun ReaderScreen(material: SoloMaterial, remaining: Long, currentPage: I
         }
             .collect { visible -> visible?.let { onCurrentPage((it + 1).coerceIn(1, material.pageCount)) } }
     }
-    Column(Modifier.fillMaxSize()) {
+    // Insets here keep the thin timer/leave bar below the status bar and the reading list
+    // clear of the navigation bar, in portrait and landscape (side cutout) alike.
+    Column(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets())) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             TextButton(onClick = onLeaveRequested, enabled = !leaving) { Text(if (leaving) "Saving…" else "Leave") }
             Text("${remaining / 60}:${(remaining % 60).toString().padStart(2, '0')}", style = MaterialTheme.typography.titleMedium)
@@ -264,7 +267,7 @@ private fun CheckpointScreen(
     var to by remember(defaultTo) { mutableStateOf(defaultTo.toString()) }
     var summary by remember { mutableStateOf("") }
     var nothing by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().padding(18.dp)) {
+    Column(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()).padding(18.dp)) {
         Text(if (isFinal) "Final checkpoint" else "How far have you got?", style = MaterialTheme.typography.headlineSmall)
         TextButton(onClick = onLeave) { Text("Leave session") }
         Text("Scores are estimates. Your timer is paused while you check in.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -299,7 +302,7 @@ private fun CheckpointScreen(
 @Composable
 private fun SegmentResultScreen(segment: com.topdawg.focusmaxxing.solo.SoloSegmentRecord?, fake: Boolean, onContinue: () -> Unit) {
     if (segment == null) return ErrorSoloScreen("The segment result is unavailable.", onContinue)
-    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Segment result", style = MaterialTheme.typography.headlineSmall)
         Text("Scores are estimates${if (fake) " · FAKE/DEV ONLY" else ""}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -323,7 +326,7 @@ private fun SegmentResultScreen(segment: com.topdawg.focusmaxxing.solo.SoloSegme
 private fun SessionResultsScreen(session: com.topdawg.focusmaxxing.solo.SoloSessionRecord?, onRunItBack: () -> Unit, onBack: () -> Unit) {
     if (session == null) return ErrorSoloScreen("The saved session result is unavailable.", onBack)
     val progress = SoloScoring.rankProgress(session.xpAfter)
-    LazyColumn(Modifier.fillMaxSize().padding(18.dp), contentPadding = PaddingValues(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()).padding(18.dp), contentPadding = PaddingValues(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item { Text("Session complete", style = MaterialTheme.typography.headlineSmall) }
         item { Text("${session.totalPoints} XP earned · ${session.totalWordsCovered} words · ${session.interruptions} interruptions") }
         item {
@@ -361,4 +364,4 @@ private fun SegmentCreditLine(segment: com.topdawg.focusmaxxing.solo.SoloSegment
     Text("Pages credited: ${pages.size} of ${segment.fromPage}–${segment.toPage} ($creditedWords of $rangeWords words)")
 }
 
-@Composable private fun ErrorSoloScreen(message: String, onBack: () -> Unit) { Column(Modifier.fillMaxSize().padding(24.dp)) { Text(message, color = MaterialTheme.colorScheme.error); TextButton(onClick = onBack) { Text("Back") } } }
+@Composable private fun ErrorSoloScreen(message: String, onBack: () -> Unit) { Column(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()).padding(24.dp)) { Text(message, color = MaterialTheme.colorScheme.error); TextButton(onClick = onBack) { Text("Back") } } }

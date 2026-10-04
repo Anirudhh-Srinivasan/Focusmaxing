@@ -4,8 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,23 +50,28 @@ class MainActivity : ComponentActivity() {
         container = AppContainer(this)
         setContent {
             FocusmaxxingTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(container))
-                    val authState by authViewModel.uiState.collectAsState()
-                    when (authState.destination) {
-                        AuthDestination.LOADING -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-                        AuthDestination.SIGN_IN -> SignInScreen(authViewModel)
-                        AuthDestination.USERNAME -> UsernameScreen(authViewModel)
-                        AuthDestination.HOME -> {
-                            val navController = rememberNavController()
-                            val uid = authState.profile?.uid.orEmpty()
-                            val homeViewModel: HomeViewModel = viewModel(key = "home_$uid", factory = HomeViewModelFactory(container))
-                            val lobbyViewModel: LobbyViewModel = viewModel(key = "lobby_$uid", factory = LobbyViewModelFactory(container))
-                            val friendsViewModel: FriendsViewModel = viewModel(key = "friends_$uid", factory = FriendsViewModelFactory(container))
-                            val solo: SoloViewModel = viewModel(key = "solo_$uid", factory = SoloViewModelFactory(container))
-                            soloViewModel = solo
-                            NavGraph(navController, homeViewModel, lobbyViewModel, friendsViewModel, authViewModel, solo, container.auth.isGuest, checkpointLaunch) {
-                                checkpointLaunch = false
+                // Paint the app background behind the transparent system bars and keep all
+                // screens clear of a side display cutout / side navigation bar (landscape).
+                // Top and bottom insets are applied by the top bars and each screen itself.
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
+                        val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(container))
+                        val authState by authViewModel.uiState.collectAsState()
+                        when (authState.destination) {
+                            AuthDestination.LOADING -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                            AuthDestination.SIGN_IN -> SignInScreen(authViewModel)
+                            AuthDestination.USERNAME -> UsernameScreen(authViewModel)
+                            AuthDestination.HOME -> {
+                                val navController = rememberNavController()
+                                val uid = authState.profile?.uid.orEmpty()
+                                val homeViewModel: HomeViewModel = viewModel(key = "home_$uid", factory = HomeViewModelFactory(container))
+                                val lobbyViewModel: LobbyViewModel = viewModel(key = "lobby_$uid", factory = LobbyViewModelFactory(container))
+                                val friendsViewModel: FriendsViewModel = viewModel(key = "friends_$uid", factory = FriendsViewModelFactory(container))
+                                val solo: SoloViewModel = viewModel(key = "solo_$uid", factory = SoloViewModelFactory(container))
+                                soloViewModel = solo
+                                NavGraph(navController, homeViewModel, lobbyViewModel, friendsViewModel, authViewModel, solo, container.auth.isGuest, checkpointLaunch) {
+                                    checkpointLaunch = false
+                                }
                             }
                         }
                     }

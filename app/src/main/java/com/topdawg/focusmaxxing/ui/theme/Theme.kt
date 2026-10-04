@@ -40,6 +40,9 @@ fun FocusmaxxingTheme(content: @Composable () -> Unit) {
             val window = (view.context as Activity).window
             window.statusBarColor = ArcadeColors.Background.toArgb()
             window.navigationBarColor = ArcadeColors.Background.toArgb()
+            // Our own navigation bar colour is already dark enough; drop the system's
+            // translucent contrast scrim so the area behind the bar stays flat app background.
+            if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = false
                 isAppearanceLightNavigationBars = false

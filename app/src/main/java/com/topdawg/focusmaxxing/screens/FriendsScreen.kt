@@ -4,21 +4,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.topdawg.focusmaxxing.data.UserProfile
+import com.topdawg.focusmaxxing.ui.components.PixelScaffold
 import com.topdawg.focusmaxxing.viewmodels.FriendsViewModel
 import com.topdawg.focusmaxxing.solo.SoloScoring
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: () -> Unit, onUpgrade: () -> Unit) {
     val state by viewModel.uiState.collectAsState(); var query by remember { mutableStateOf("") }; var showLeaderboard by remember { mutableStateOf(false) }
-    Scaffold(topBar = { TopAppBar(title = { Text(if (requestsOnly) "Friend requests" else "Friends") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }) }) { padding ->
+    PixelScaffold(title = if (requestsOnly) "Friend requests" else "Friends", onBack = onBack) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
             if (viewModel.isGuest) {
                 Text("Create an account to add friends and see their stats.", modifier = Modifier.padding(vertical = 18.dp))
@@ -34,7 +33,7 @@ fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: ()
                     if (state.meLoading && leaderboard.isEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth())
                     if (!state.meLoading && state.me == null) Text(state.error ?: "Your stats are unavailable.", color = MaterialTheme.colorScheme.error)
                     if (!state.meLoading && state.me != null && state.friends.isEmpty()) Text("Add friends to compare XP. Your profile is shown below.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    LazyColumn { items(leaderboard, key = { it.uid }) { profile ->
+                    LazyColumn(Modifier.weight(1f)) { items(leaderboard, key = { it.uid }) { profile ->
                         val place = leaderboard.indexOfFirst { it.uid == profile.uid } + 1
                         ListItem(
                             headlineContent = { Text("#$place  @${profile.username}${if (profile.uid == state.me?.uid) " (you)" else ""}") },
@@ -50,12 +49,12 @@ fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: ()
                 }
                 Text("Your friends", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 20.dp, bottom = 8.dp))
                 if (!state.loading && state.friends.isEmpty()) Text("No friends yet. Search for someone by username.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LazyColumn { items(state.friends, key = { it.uid }) { profile -> FriendRow(profile) { viewModel.openProfile(profile) } } }
+                LazyColumn(Modifier.weight(1f)) { items(state.friends, key = { it.uid }) { profile -> FriendRow(profile) { viewModel.openProfile(profile) } } }
                 }
             } else {
                 Text("Incoming requests", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(vertical = 12.dp))
                 if (!state.loading && state.requests.isEmpty()) Text("No incoming requests.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                LazyColumn { items(state.requests, key = { it.id }) { request -> ListItem(headlineContent = { Text("@${request.fromUsername}") }, supportingContent = { Text("Wants to be your friend") }, trailingContent = { Row { TextButton(onClick = { viewModel.respond(request.id, true) }, enabled = !state.loading) { Text("Accept") }; TextButton(onClick = { viewModel.respond(request.id, false) }, enabled = !state.loading) { Text("Decline") } } }) } }
+                LazyColumn(Modifier.weight(1f)) { items(state.requests, key = { it.id }) { request -> ListItem(headlineContent = { Text("@${request.fromUsername}") }, supportingContent = { Text("Wants to be your friend") }, trailingContent = { Row { TextButton(onClick = { viewModel.respond(request.id, true) }, enabled = !state.loading) { Text("Accept") }; TextButton(onClick = { viewModel.respond(request.id, false) }, enabled = !state.loading) { Text("Decline") } } }) } }
             }
             if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(8.dp)) }
@@ -70,11 +69,58 @@ fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: ()
     AlertDialog(onDismissRequest = onDismiss, title = { Text("@${profile.username}") }, text = { StatsCard(profile) }, confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendProfileScreen(profile: UserProfile?, onBack: () -> Unit) {
-    Scaffold(topBar = { TopAppBar(title = { Text(profile?.let { "@${it.username}" } ?: "Profile") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }) }) { padding ->
+    PixelScaffold(title = profile?.let { "@${it.username}" } ?: "Profile", onBack = onBack) { padding ->
         if (profile == null) Box(Modifier.fillMaxSize().padding(padding)) { Text("Profile is unavailable.", modifier = Modifier.padding(24.dp), color = MaterialTheme.colorScheme.error) }
         else Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) { StatsCard(profile) }
+    }
+}
+
+@Composable
+fun StatsCard(profile: UserProfile, modifier: Modifier = Modifier) {
+    val rankProgress = SoloScoring.rankProgress(profile.xp)
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "@${profile.username}",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = "${rankProgress.rank.label} · ${profile.xp} XP",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            LinearProgressIndicator(
+                progress = { rankProgress.progressWithinRank },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = "${rankProgress.xpToNextRank} XP to next rank",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Streak", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${profile.streak} days", style = MaterialTheme.typography.bodyLarge)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Sessions", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${profile.sessionsPlayed}", style = MaterialTheme.typography.bodyLarge)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Battles", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${profile.battlesPlayed}", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        }
     }
 }

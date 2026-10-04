@@ -14,8 +14,16 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -276,7 +284,7 @@ fun PixelDialog(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Dialog(onDismissRequest = onDismissRequest, properties = properties) {
-        PixelCard(modifier.fillMaxWidth(), accent = ArcadeColors.Accent) {
+        PixelCard(modifier.fillMaxWidth().windowInsetsPadding(safeWindowInsets()), accent = ArcadeColors.Accent) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = ArcadeColors.Text)
             Spacer(Modifier.height(ArcadeDimens.Space3))
             content()
@@ -289,6 +297,29 @@ fun PixelDialog(
     }
 }
 
+/**
+ * Insets for content pinned to the top of the screen: the status bar plus the display
+ * cutout (notch/camera punch-hole), and the side system bars when in landscape.
+ * Values are read from the window, so no system bar heights are ever hardcoded.
+ */
+@Composable
+fun topWindowInsets(): WindowInsets =
+    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+
+/**
+ * Insets for content pinned to the bottom of the screen: the navigation/gesture bar and the
+ * keyboard (IME), whichever reaches higher into the window.
+ */
+@Composable
+fun bottomWindowInsets(): WindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+
+/**
+ * Full-screen insets: keeps content clear of the status bar, navigation bar, display cutout
+ * and the keyboard. Insets already applied by an ancestor are not applied twice.
+ */
+@Composable
+fun safeWindowInsets(): WindowInsets = WindowInsets.safeDrawing
+
 @Composable
 fun PixelTopBar(
     title: String,
@@ -297,7 +328,11 @@ fun PixelTopBar(
     actions: (@Composable RowScope.() -> Unit)? = null
 ) {
     Row(
-        modifier.fillMaxWidth().heightIn(min = 56.dp).background(ArcadeColors.Background)
+        // Background first so the bar colour extends behind the status bar / cutout,
+        // then the system bar inset so the bar content starts below them.
+        modifier.fillMaxWidth().background(ArcadeColors.Background)
+            .windowInsetsPadding(topWindowInsets())
+            .heightIn(min = 56.dp)
             .padding(horizontal = ArcadeDimens.Space3, vertical = ArcadeDimens.Space2),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -305,6 +340,40 @@ fun PixelTopBar(
         Text(title, modifier = Modifier.weight(1f), color = ArcadeColors.Text, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         actions?.invoke(this)
     }
+}
+
+/**
+ * [Scaffold] wrapper that handles window insets in one place:
+ * the top bar clears the status bar and display cutout, while the content slot receives
+ * padding that keeps it above the navigation bar and the keyboard (IME).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PixelScaffold(
+    title: String,
+    onBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    actions: (@Composable RowScope.() -> Unit)? = null,
+    content: @Composable (PaddingValues) -> Unit
+) {
+    Scaffold(
+        modifier = modifier,
+        contentWindowInsets = safeWindowInsets(),
+        topBar = {
+            TopAppBar(
+                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                navigationIcon = {
+                    if (onBack != null) IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = { actions?.invoke(this) },
+                windowInsets = topWindowInsets(),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = ArcadeColors.Background)
+            )
+        },
+        content = content
+    )
 }
 
 @Composable

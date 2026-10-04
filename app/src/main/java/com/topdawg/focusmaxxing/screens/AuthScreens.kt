@@ -28,6 +28,7 @@ import com.topdawg.focusmaxxing.ui.components.PixelDialog
 import com.topdawg.focusmaxxing.ui.components.PixelLoadingIndicator
 import com.topdawg.focusmaxxing.ui.components.PixelSprite
 import com.topdawg.focusmaxxing.ui.components.PixelTextField
+import com.topdawg.focusmaxxing.ui.components.safeWindowInsets
 import com.topdawg.focusmaxxing.ui.theme.ArcadeColors
 import com.topdawg.focusmaxxing.ui.theme.ArcadeDimens
 import com.topdawg.focusmaxxing.ui.theme.FocusmaxxingTheme
@@ -83,7 +84,11 @@ private fun SignInPanel(
     onGoogle: () -> Unit
 ) {
     Column(
-        Modifier.fillMaxSize().background(ArcadeColors.Background).verticalScroll(rememberScrollState()).padding(ArcadeDimens.Space6),
+        Modifier.fillMaxSize()
+            .background(ArcadeColors.Background)
+            .windowInsetsPadding(safeWindowInsets())
+            .verticalScroll(rememberScrollState())
+            .padding(ArcadeDimens.Space6),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -143,7 +148,15 @@ fun UsernameScreen(viewModel: AuthViewModel) {
 
 @Composable
 private fun UsernamePanel(username: String, state: AuthUiState, onUsernameChange: (String) -> Unit, onContinue: () -> Unit) {
-    Column(Modifier.fillMaxSize().background(ArcadeColors.Background).padding(ArcadeDimens.Space6), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(
+        Modifier.fillMaxSize()
+            .background(ArcadeColors.Background)
+            .windowInsetsPadding(safeWindowInsets())
+            .verticalScroll(rememberScrollState())
+            .padding(ArcadeDimens.Space6),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
         PixelSprite(ArcadeSprites.Paw.rows, ArcadeSprites.Paw.palette, ArcadeSprites.Paw.description, Modifier.size(52.dp))
         Spacer(Modifier.height(ArcadeDimens.Space4))
         Text("CHOOSE YOUR HANDLE", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall)
