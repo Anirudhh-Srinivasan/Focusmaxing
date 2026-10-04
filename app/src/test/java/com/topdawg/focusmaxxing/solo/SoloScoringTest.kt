@@ -12,7 +12,22 @@ class SoloScoringTest {
     }
 
     @Test fun recallBelowThresholdEarnsZero() {
-        assertEquals(0, SoloScoring.scoreSegment(1_000, 600, 29, 0).points)
+        assertEquals(0, SoloScoring.scoreSegment(1_000, 600, 44, 0).points)
+        assertEquals(0, SoloScoring.scoreSegment(1_000, 600, 35, 0).points)
+        assertEquals(9, SoloScoring.scoreSegment(1_000, 600, 45, 0).points)
+    }
+
+    @Test fun reflectedPageWordsPreventWideRangeInflation() {
+        val pageWords = listOf(247, 226, 198, 212, 213, 207, 203, 275)
+        val pageOneClaimedAsEight = SoloScoring.creditedWords(pageWords, 1, 8, listOf(1))
+        val honestPagesOneToThree = SoloScoring.creditedWords(pageWords, 1, 3, listOf(1, 2, 3))
+        assertEquals(247, pageOneClaimedAsEight)
+        assertEquals(671, honestPagesOneToThree)
+        val inflatedClaimScore = SoloScoring.scoreSegment(pageOneClaimedAsEight, 60, 80, 0).points
+        val honestRangeScore = SoloScoring.scoreSegment(honestPagesOneToThree, 60, 75, 0).points
+        assertEquals(4, inflatedClaimScore)
+        assertEquals(6, honestRangeScore)
+        assertEquals(0, SoloScoring.creditedWords(pageWords, 1, 8, emptyList()))
     }
 
     @Test fun focusFactorCannotFallBelowHalf() {

@@ -95,6 +95,7 @@ data class RecallGrade(
     val wordsCovered: Int,
     val feedback: String,
     val keyPointsMissed: List<String>,
+    val pagesReflected: List<Int> = emptyList(),
     val refreshedMaterialId: String? = null,
     val isFake: Boolean = false
 )

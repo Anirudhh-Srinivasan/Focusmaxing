@@ -27,7 +27,7 @@ private data class MaterialResponseDto(val materialId: String, val pageCount: In
 private data class GradeRequestDto(val materialId: String, val fromPage: Int, val toPage: Int, val summary: String)
 
 @Serializable
-private data class GradeResponseDto(val recallScore: Int, val wordsCovered: Int, val feedback: String, val keyPointsMissed: List<String> = emptyList())
+private data class GradeResponseDto(val recallScore: Int, val wordsCovered: Int, val feedback: String, val keyPointsMissed: List<String> = emptyList(), val pagesReflected: List<Int> = emptyList())
 
 class BackendRecallAiService(
     private val baseUrl: String,
@@ -58,7 +58,7 @@ class BackendRecallAiService(
         }
         if (response.first !in 200..299) throw IOException(response.second.errorMessage())
         val grade = json.decodeFromString(GradeResponseDto.serializer(), response.second)
-        RecallGrade(grade.recallScore, grade.wordsCovered, grade.feedback, grade.keyPointsMissed, refreshedMaterialId = refreshedId)
+        RecallGrade(grade.recallScore, grade.wordsCovered, grade.feedback, grade.keyPointsMissed, grade.pagesReflected, refreshedMaterialId = refreshedId)
     }
 
     private suspend fun upload(material: SoloMaterial, topic: String): MaterialIngestResult {

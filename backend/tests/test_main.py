@@ -44,16 +44,36 @@ def test_short_range_is_returned_without_sampling():
 def test_grade_json_validation_and_one_retry():
     outputs = iter([
         '{"recallScore":"excellent","feedback":"Not a number","keyPointsMissed":[]}',
-        json.dumps({"recallScore": 76, "feedback": "Good coverage. Add one more detail.", "keyPointsMissed": ["One detail"]}),
+        json.dumps({"recallScore": 76, "feedback": "Good coverage. Add one more detail.", "keyPointsMissed": ["One detail"], "pagesReflected": [1, 2]}),
     ])
     calls = []
     grade = main.grade_with_retry("context", "summary", lambda context, summary: calls.append((context, summary)) or next(outputs))
     assert grade.recallScore == 76
+    assert grade.pagesReflected == [1, 2]
     assert len(calls) == 2
     with pytest.raises(ValueError):
         main.GradeResponse.model_validate_json(json.dumps({"recallScore": 101, "feedback": "Too high", "keyPointsMissed": []}))
     with pytest.raises(ValueError):
         main.GradeResponse.model_validate_json(json.dumps({"recallScore": 30, "feedback": "One. Two. Three.", "keyPointsMissed": []}))
+    assert main.GradeResponse.model_validate_json(json.dumps({"recallScore": 60, "feedback": "Okay.", "pagesReflected": []})).pagesReflected == []
+
+
+@pytest.mark.parametrize("model_pages,expected_pages", [([1, 2, 3], [1, 2]), ([], [])])
+def test_score_filters_reflected_pages_to_claimed_range(client, monkeypatch, model_pages, expected_pages):
+    two_pages = " ".join(f"word{i}" for i in range(TXT_WORDS_PER_PAGE + 1)).encode()
+    uploaded = client.post("/materials", data={"topic": "OS"}, files={"file": ("notes.txt", two_pages, "text/plain")})
+    material_id = uploaded.json()["materialId"]
+    monkeypatch.setattr(main, "grade_with_retry", lambda *_: main.GradeResponse(
+        recallScore=70, feedback="Good coverage.", pagesReflected=model_pages
+    ))
+    response = client.post("/checkpoint/score", json={
+        "materialId": material_id,
+        "fromPage": 1,
+        "toPage": 2,
+        "summary": "This is a sufficiently detailed summary with more than fifteen words for the endpoint validation.",
+    })
+    assert response.status_code == 200
+    assert response.json()["pagesReflected"] == expected_pages
 
 
 def test_material_upload_and_missing_material_response(client, monkeypatch):

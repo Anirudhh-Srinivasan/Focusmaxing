@@ -76,6 +76,7 @@ class GradeResponse(BaseModel):
     recallScore: int = Field(ge=0, le=100)
     feedback: str = Field(min_length=1, max_length=600)
     keyPointsMissed: list[str] = Field(default_factory=list, max_length=MAX_MISSED_POINTS)
+    pagesReflected: list[int] = Field(default_factory=list)
 
     @field_validator("feedback")
     @classmethod
@@ -228,9 +229,13 @@ def _llm_json(context: str, summary: str) -> str:
                 "content": (
                     "Grade a learner's recall fairly using only the supplied selected-range context. "
                     "Judge factual accuracy and whether the summary captures important ideas across the whole claimed range; "
-                    "a very broad range summarized from only one small part should score lower. Content outside this range does not count. "
+                    "a very broad range summarized from only one small part should score lower. List pagesReflected as page numbers "
+                    "inside the selected range whose content the summary actually reflects; use an empty list if none can be identified. "
+                    "Score generic or vague summaries below 40. If any claim contradicts the supplied text, cap recallScore at 40. "
+                    "Content outside this range does not count. "
                     "Never accuse or speculate about dishonesty. Return JSON with integer recallScore from 0 to 100, "
-                    "feedback of at most two short sentences, and keyPointsMissed as an array of at most five concise strings."
+                    "feedback of at most two short sentences, keyPointsMissed as an array of at most five concise strings, "
+                    "and pagesReflected as an array of page numbers."
                 ),
             },
             {"role": "user", "content": f"SELECTED MATERIAL RANGE (only grading context):\n{context}\n\nLEARNER RECALL:\n{summary}"},
@@ -294,7 +299,11 @@ def score_checkpoint(payload: ScoreRequest, uid: str = Depends(authenticated_use
         raise HTTPException(status_code=422, detail=f"Recall must be between {SUMMARY_MIN_WORDS} and {SUMMARY_MAX_WORDS} words.")
 
     selected_pages = material.pages[payload.fromPage - 1:payload.toPage]
-    context = sample_range_text(selected_pages)
+    words_per_page = max(1, MAX_CONTEXT_WORDS // len(selected_pages))
+    context = "\n\n".join(
+        f"PAGE {payload.fromPage + offset}:\n{sample_range_text([page], words_per_page)}"
+        for offset, page in enumerate(selected_pages)
+    )
     words_covered = sum(material.page_word_counts[payload.fromPage - 1:payload.toPage])
     try:
         grade = grade_with_retry(context, payload.summary)
@@ -307,4 +316,5 @@ def score_checkpoint(payload: ScoreRequest, uid: str = Depends(authenticated_use
         "wordsCovered": words_covered,
         "feedback": grade.feedback,
         "keyPointsMissed": grade.keyPointsMissed,
+        "pagesReflected": [page for page in grade.pagesReflected if payload.fromPage <= page <= payload.toPage],
     }

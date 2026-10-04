@@ -27,7 +27,7 @@ object SoloConstants {
     const val BACKEND_WRITE_TIMEOUT_SECONDS = 60L
 
     const val MAX_WPM = 400
-    const val MIN_RECALL_SCORE_FOR_POINTS = 30
+    const val MIN_RECALL_SCORE_FOR_POINTS = 45
     const val FOCUS_PENALTY_PER_INTERRUPTION = 0.05
     const val MIN_FOCUS_FACTOR = 0.5
     const val WORDS_PER_POINT = 50.0
@@ -71,6 +71,13 @@ data class SegmentScore(
 )
 
 object SoloScoring {
+    fun creditedWords(pageWordCounts: List<Int>, fromPage: Int, toPage: Int, pagesReflected: List<Int>): Int {
+        val first = fromPage.coerceAtLeast(1)
+        val last = toPage.coerceAtMost(pageWordCounts.size)
+        if (last < first) return 0
+        return pagesReflected.asSequence().filter { it in first..last }.distinct().sumOf { pageWordCounts[it - 1].coerceAtLeast(0) }
+    }
+
     fun scoreSegment(words: Int, activeSeconds: Long, recallScore: Int, interruptions: Int): SegmentScore {
         val safeWords = words.coerceAtLeast(0)
         val safeSeconds = activeSeconds.coerceAtLeast(0L)

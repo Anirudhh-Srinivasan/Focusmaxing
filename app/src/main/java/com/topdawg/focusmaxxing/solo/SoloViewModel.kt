@@ -226,7 +226,9 @@ class SoloViewModel(
             try {
                 val activeSeconds = ((elapsed - active.segmentStartActiveMs).coerceAtLeast(0L) / 1_000L)
                 val grade = if (nothingCovered) null else recallAi.grade(active.material, active.topic, safeFrom, safeTo, summary.trim())
-                val wordsCovered = if (nothingCovered) 0 else grade?.wordsCovered ?: active.material.pageWordCounts.subList(safeFrom - 1, safeTo).sum()
+                val wordsCovered = if (nothingCovered || grade == null) 0 else SoloScoring.creditedWords(
+                    active.material.pageWordCounts, safeFrom, safeTo, grade.pagesReflected
+                )
                 val score = if (nothingCovered) SoloScoring.scoreSegment(0, activeSeconds, 0, active.currentSegmentInterruptions)
                 else SoloScoring.scoreSegment(wordsCovered, activeSeconds, grade?.recallScore ?: 0, active.currentSegmentInterruptions)
                 val segment = SoloSegmentRecord(

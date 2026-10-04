@@ -34,6 +34,7 @@ class FakeRecallAiService : RecallAiService {
             } else 0,
             feedback = "FAKE/DEV ONLY: This score is based only on recall length, not material accuracy.",
             keyPointsMissed = emptyList(),
+            pagesReflected = if (fromPage in 1..material.pageCount && toPage in fromPage..material.pageCount) (fromPage..toPage).toList() else emptyList(),
             isFake = true
         )
     }
