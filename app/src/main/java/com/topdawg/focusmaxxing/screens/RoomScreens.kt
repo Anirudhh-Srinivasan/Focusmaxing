@@ -46,7 +46,7 @@ fun CreateLobbyScreen(viewModel: LobbyViewModel, onLobbyCreated: (String) -> Uni
             PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) {
                 Text("Room details", color = ArcadeColors.Text, style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(12.dp))
-                PixelTextField(name, { name = it.take(40) }, "ROOM NAME", placeholder = "late night lock-in", singleLine = true, enabled = !state.loading, errorMessage = state.error)
+                PixelTextField(name, { name = it.take(40) }, "ROOM NAME", placeholder = "late night lock-in", supportingMessage = "Give your squad a name.", singleLine = true, enabled = !state.loading, errorMessage = state.error)
                 Spacer(Modifier.height(16.dp))
                 Text("VISIBILITY", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.labelMedium)
                 Spacer(Modifier.height(8.dp))
@@ -79,7 +79,7 @@ fun JoinLobbyScreen(viewModel: LobbyViewModel, onJoined: (String) -> Unit, onBac
             PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) {
                 Text("GOT A CODE?", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(8.dp))
-                Text("Drop it here and pull up.", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodyMedium)
+                Text("Drop the code. Squad's waiting.", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(20.dp))
                 PixelTextField(code, { code = it.uppercase().filter { c -> c in 'A'..'Z' || c in '0'..'9' }.take(6) }, "6-CHARACTER ROOM CODE", placeholder = "ABC123", supportingMessage = "Ask the host for their room code.", errorMessage = state.error, enabled = !state.loading, singleLine = true, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters))
                 Spacer(Modifier.height(16.dp))

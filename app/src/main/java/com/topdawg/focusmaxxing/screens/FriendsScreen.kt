@@ -39,7 +39,7 @@ fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: ()
                     Text("XP LEADERBOARD", Modifier.padding(vertical = 8.dp), color = ArcadeColors.Text, style = MaterialTheme.typography.titleMedium)
                     if (state.meLoading && leaderboard.isEmpty()) PixelLoadingIndicator(contentDescription = "Loading leaderboard")
                     if (!state.meLoading && state.me == null) InlineError(state.error ?: "Your stats are unavailable.")
-                    if (!state.meLoading && state.me != null && state.friends.isEmpty()) Text("Add friends to compare XP. Your profile is shown below.", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodyMedium)
+                    if (!state.meLoading && state.me != null && state.friends.isEmpty()) Text("Add a few friends and make this leaderboard interesting.", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodyMedium)
                     LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(leaderboard, key = { it.uid }) { profile ->
                             val place = leaderboard.indexOfFirst { it.uid == profile.uid } + 1
@@ -67,7 +67,7 @@ fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: ()
                     items(state.requests, key = { it.id }) { request ->
                         PixelCard(Modifier.fillMaxWidth()) {
                             Text("@${request.fromUsername}", color = ArcadeColors.Text, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("Wants to be your friend", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodySmall)
+                Text("Wants to join your squad.", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodySmall)
                             Spacer(Modifier.height(10.dp)); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 PixelButton("ACCEPT", { viewModel.respond(request.id, true) }, Modifier.weight(1f), enabled = !state.loading)
                                 PixelButton("DECLINE", { viewModel.respond(request.id, false) }, Modifier.weight(1f), kind = PixelButtonKind.Secondary, enabled = !state.loading)

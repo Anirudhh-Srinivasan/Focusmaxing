@@ -90,7 +90,7 @@ fun SoloStudyScreen(viewModel: SoloViewModel, onBack: () -> Unit) {
         Text("SOLO BATTLE", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall)
         PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) {
             Text("MISSION", color = ArcadeColors.Text, style = MaterialTheme.typography.titleMedium); Spacer(Modifier.height(12.dp))
-            PixelTextField(topic, onTopic, "TOPIC", placeholder = "What are you learning?", singleLine = true)
+            PixelTextField(topic, onTopic, "TOPIC", placeholder = "What are you learning?", supportingMessage = "Pick one thing to lock in on.", singleLine = true)
         }
         PixelCard(Modifier.fillMaxWidth()) {
             Text("STUDY MATERIAL", color = ArcadeColors.Text, style = MaterialTheme.typography.titleMedium); Spacer(Modifier.height(8.dp))
@@ -229,7 +229,7 @@ private object PdfBitmapCache {
             Spacer(Modifier.height(8.dp)); PixelProgressBar((wordCount / SoloConstants.MAX_RECALL_WORDS.toFloat()).coerceIn(0f, 1f), Modifier.fillMaxWidth().height(10.dp), segments = 15, color = if (validWords) ArcadeColors.Accent else ArcadeColors.Info, contentDescription = "Recall word count $wordCount of ${SoloConstants.MAX_RECALL_WORDS}")
             Text("$wordCount / ${SoloConstants.MAX_RECALL_WORDS} words${if (validWords) " · good to go" else " · 15 min / 150 max"}", color = if (validWords) ArcadeColors.Accent else ArcadeColors.TextMuted, style = MaterialTheme.typography.labelMedium)
         }
-        Text("Study time: ${activeSeconds / 60} min ${activeSeconds % 60} sec", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodySmall)
+            Text("Study time: ${activeSeconds / 60} min ${activeSeconds % 60} sec", color = ArcadeColors.TextMuted, style = MaterialTheme.typography.bodySmall)
         error?.takeIf(String::isNotBlank)?.let { InlineError(it) }
         PixelButton(if (isFinal) "FINISH SESSION" else "SUBMIT CHECKPOINT", { onSubmit(from.toIntOrNull() ?: -1, to.toIntOrNull() ?: -1, summary, nothing) }, Modifier.fillMaxWidth(), loading = loading)
         PixelButton("LEAVE SESSION", onLeave, Modifier.fillMaxWidth(), kind = PixelButtonKind.Secondary, enabled = !loading)
