@@ -1,55 +1,54 @@
 package com.topdawg.focusmaxxing.ui.theme
 
 import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val ArcadeColorScheme = darkColorScheme(
+    primary = ArcadeColors.Accent,
+    onPrimary = ArcadeColors.Background,
+    primaryContainer = ArcadeColors.AccentDim,
+    onPrimaryContainer = ArcadeColors.Background,
+    secondary = ArcadeColors.AccentDim,
+    onSecondary = ArcadeColors.Background,
+    secondaryContainer = ArcadeColors.SurfaceHigh,
+    onSecondaryContainer = ArcadeColors.Text,
+    tertiary = ArcadeColors.Info,
+    onTertiary = ArcadeColors.Background,
+    error = ArcadeColors.Danger,
+    onError = ArcadeColors.Background,
+    background = ArcadeColors.Background,
+    onBackground = ArcadeColors.Text,
+    surface = ArcadeColors.Surface,
+    onSurface = ArcadeColors.Text,
+    surfaceVariant = ArcadeColors.SurfaceHigh,
+    onSurfaceVariant = ArcadeColors.TextMuted,
+    outline = ArcadeColors.Border,
+    outlineVariant = ArcadeColors.Border,
+    scrim = ArcadeColors.Background
 )
 
 @Composable
-fun FocusmaxxingTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalView.current.context
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
+fun FocusmaxxingTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.statusBarColor = ArcadeColors.Background.toArgb()
+            window.navigationBarColor = ArcadeColors.Background.toArgb()
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
         }
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = ArcadeColorScheme,
         typography = Typography,
         content = content
     )
