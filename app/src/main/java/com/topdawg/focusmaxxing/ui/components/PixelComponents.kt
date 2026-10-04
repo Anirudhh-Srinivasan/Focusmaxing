@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -193,7 +194,8 @@ fun PixelTextField(
     enabled: Boolean = true,
     singleLine: Boolean = false,
     minLines: Int = 1,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     val shape = remember { PixelShape(steps = 1) }
     Column(modifier) {
@@ -218,6 +220,7 @@ fun PixelTextField(
                     singleLine = singleLine,
                     minLines = minLines,
                     keyboardOptions = keyboardOptions,
+                    visualTransformation = visualTransformation,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = ArcadeColors.Text),
                     cursorBrush = SolidColor(ArcadeColors.Accent),
                     modifier = Modifier.fillMaxWidth()
@@ -279,8 +282,8 @@ fun PixelDialog(
             content()
             Spacer(Modifier.height(ArcadeDimens.Space4))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArcadeDimens.Space2, Alignment.End)) {
-                dismissButton?.invoke()
-                confirmButton()
+                if (dismissButton != null) Box(Modifier.weight(1f)) { dismissButton() }
+                Box(Modifier.weight(1f)) { confirmButton() }
             }
         }
     }
