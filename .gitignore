@@ -22,3 +22,5 @@ app/google-services.json
 __pycache__/
 .pytest_cache/
 **/.venv/
+test-material.pdf
+test-material.txt
