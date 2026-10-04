@@ -30,6 +30,28 @@ class SoloScoringTest {
         assertEquals(0, SoloScoring.creditedWords(pageWords, 1, 8, emptyList()))
     }
 
+    @Test fun zeroPointReasonExplainsLowRecallOrNoCreditedPages() {
+        assertEquals("Recall too low for points on this one (minimum 45).", SoloScoring.zeroPointsReason(35, 1))
+        assertEquals("Your summary didn't match the pages you picked.", SoloScoring.zeroPointsReason(70, 0))
+        assertEquals(null, SoloScoring.zeroPointsReason(70, 1))
+    }
+
+    @Test fun debugFastModeIsAbsentFromReleaseConfiguration() {
+        if (com.topdawg.focusmaxxing.BuildConfig.DEBUG) {
+            assertEquals(true, 2 in SoloConstants.SESSION_LENGTHS_MINUTES)
+            assertEquals(30, SoloConstants.CHECKPOINT_INTERVAL_MIN_SECONDS)
+            assertEquals(45, SoloConstants.CHECKPOINT_INTERVAL_MAX_SECONDS)
+            assertEquals(20, SoloConstants.MIN_REMAINING_SECONDS_FOR_CHECKPOINT)
+            assertEquals(60, SoloConstants.MIN_COUNTED_SESSION_SECONDS)
+        } else {
+            assertEquals(false, 2 in SoloConstants.SESSION_LENGTHS_MINUTES)
+            assertEquals(600, SoloConstants.CHECKPOINT_INTERVAL_MIN_SECONDS)
+            assertEquals(900, SoloConstants.CHECKPOINT_INTERVAL_MAX_SECONDS)
+            assertEquals(300, SoloConstants.MIN_REMAINING_SECONDS_FOR_CHECKPOINT)
+            assertEquals(600, SoloConstants.MIN_COUNTED_SESSION_SECONDS)
+        }
+    }
+
     @Test fun focusFactorCannotFallBelowHalf() {
         val score = SoloScoring.scoreSegment(10_000, 600, 100, 20)
         assertEquals(0.5, score.focusFactor, 0.00001)
@@ -42,8 +64,8 @@ class SoloScoringTest {
     }
 
     @Test fun shortSessionsDoNotCountAndDailyCapIsEnforced() {
-        assertEquals(0, SoloScoring.sessionPoints(300, 599, 0))
-        assertEquals(150, SoloScoring.sessionPoints(300, 600, 450))
+        assertEquals(0, SoloScoring.sessionPoints(300, (SoloConstants.MIN_COUNTED_SESSION_SECONDS - 1).toLong(), 0))
+        assertEquals(150, SoloScoring.sessionPoints(300, SoloConstants.MIN_COUNTED_SESSION_SECONDS.toLong(), 450))
         assertEquals(0, SoloScoring.sessionPoints(300, 3_600, 600))
     }
 

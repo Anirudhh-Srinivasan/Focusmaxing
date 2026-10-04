@@ -1,5 +1,7 @@
 package com.topdawg.focusmaxxing.solo
 
+import com.topdawg.focusmaxxing.BuildConfig
+
 /** Tune all solo scoring thresholds and rank boundaries here. */
 object SoloConstants {
     const val MAX_UPLOAD_BYTES = 20 * 1024 * 1024
@@ -7,11 +9,15 @@ object SoloConstants {
     const val TXT_WORDS_PER_VIRTUAL_PAGE = 300
     const val MIN_SESSION_MINUTES = 25
     const val MAX_SESSION_MINUTES = 90
-    val SESSION_LENGTHS_MINUTES = listOf(25, 45, 60, 90)
+    // Debug-only fast mode. Release builds retain the production session/checkpoint/accounting values below.
+    val SESSION_LENGTHS_MINUTES = if (BuildConfig.DEBUG) listOf(2, 25, 45, 60, 90) else listOf(25, 45, 60, 90)
     const val COUNTDOWN_SECONDS = 3
     const val MIN_CHECKPOINT_INTERVAL_MINUTES = 10
     const val MAX_CHECKPOINT_INTERVAL_MINUTES = 15
     const val MIN_REMAINING_MINUTES_FOR_CHECKPOINT = 5
+    val CHECKPOINT_INTERVAL_MIN_SECONDS = if (BuildConfig.DEBUG) 30 else MIN_CHECKPOINT_INTERVAL_MINUTES * 60
+    val CHECKPOINT_INTERVAL_MAX_SECONDS = if (BuildConfig.DEBUG) 45 else MAX_CHECKPOINT_INTERVAL_MINUTES * 60
+    val MIN_REMAINING_SECONDS_FOR_CHECKPOINT = if (BuildConfig.DEBUG) 20 else MIN_REMAINING_MINUTES_FOR_CHECKPOINT * 60
     const val MAX_PAGES_PER_CHECKPOINT = 60
     const val MIN_RECALL_SENTENCES = 2
     const val MAX_RECALL_SENTENCES = 4
@@ -32,6 +38,7 @@ object SoloConstants {
     const val MIN_FOCUS_FACTOR = 0.5
     const val WORDS_PER_POINT = 50.0
     const val MIN_COUNTED_SESSION_MINUTES = 10
+    val MIN_COUNTED_SESSION_SECONDS = if (BuildConfig.DEBUG) 60 else MIN_COUNTED_SESSION_MINUTES * 60
     const val MAX_POINTS_PER_DAY = 600
     const val INTERRUPTION_BACKGROUND_SECONDS = 30
 
@@ -78,6 +85,12 @@ object SoloScoring {
         return pagesReflected.asSequence().filter { it in first..last }.distinct().sumOf { pageWordCounts[it - 1].coerceAtLeast(0) }
     }
 
+    fun zeroPointsReason(recallScore: Int, creditedPageCount: Int): String? = when {
+        recallScore < SoloConstants.MIN_RECALL_SCORE_FOR_POINTS -> "Recall too low for points on this one (minimum ${SoloConstants.MIN_RECALL_SCORE_FOR_POINTS})."
+        creditedPageCount == 0 -> "Your summary didn't match the pages you picked."
+        else -> null
+    }
+
     fun scoreSegment(words: Int, activeSeconds: Long, recallScore: Int, interruptions: Int): SegmentScore {
         val safeWords = words.coerceAtLeast(0)
         val safeSeconds = activeSeconds.coerceAtLeast(0L)
@@ -94,7 +107,7 @@ object SoloScoring {
     }
 
     fun sessionPoints(proposedPoints: Int, activeSeconds: Long, pointsAlreadyEarnedToday: Int): Int {
-        if (activeSeconds < SoloConstants.MIN_COUNTED_SESSION_MINUTES * 60L) return 0
+        if (activeSeconds < SoloConstants.MIN_COUNTED_SESSION_SECONDS) return 0
         val remainingToday = (SoloConstants.MAX_POINTS_PER_DAY - pointsAlreadyEarnedToday.coerceAtLeast(0)).coerceAtLeast(0)
         return proposedPoints.coerceAtLeast(0).coerceAtMost(remainingToday)
     }

@@ -31,12 +31,12 @@ The app uses in-memory repositories and a clearly marked fake recall grader when
 
 ```properties
 FOCUSMAXXING_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
-FOCUSMAXXING_BACKEND_URL=http://10.0.2.2:8000
+FOCUSMAXXING_BACKEND_URL=http://localhost:8000
 ```
 
 Keep existing `sdk.dir` in `local.properties`. The Google Services plugin activates only when `app/google-services.json` exists. Use Android Studio's JDK 17 or 21 with the pinned Kotlin 2.0.21 toolchain.
 
-For fake mode, omit `app/google-services.json` and leave `FOCUSMAXXING_BACKEND_URL` unset. The app uses in-memory auth/room/friend/session repositories and a clearly labeled fake recall grader. For real Android + local backend mode, add Firebase config and use the emulator URL above; a physical device should use the development computer's LAN address instead. Debug builds permit cleartext HTTP for local testing only.
+For fake mode, omit `app/google-services.json` and leave `FOCUSMAXXING_BACKEND_URL` unset. The app uses in-memory auth/room/friend/session repositories and a clearly labeled fake recall grader. To test with a real local backend on a phone connected over USB, run `adb reverse tcp:8000 tcp:8000` and use `http://localhost:8000`. For an emulator, use `http://10.0.2.2:8000`. Debug builds permit cleartext HTTP for local testing only.
 
 ## Recall backend
 

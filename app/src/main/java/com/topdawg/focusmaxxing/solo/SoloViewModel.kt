@@ -120,7 +120,7 @@ class SoloViewModel(
             val selected = _uiState.value.selectedMaterial
             try {
                 require(topic.isNotBlank()) { "Enter a topic name." }
-                require(durationMinutes in setOf(25, 45, 60, 90)) { "Choose a supported session length." }
+                require(durationMinutes in SoloConstants.SESSION_LENGTHS_MINUTES) { "Choose a supported session length." }
                 require(selected != null) { "Choose one PDF or TXT material first." }
                 require(startPage in 1..selected.pageCount) { "Start page must be between 1 and ${selected.pageCount}." }
                 _uiState.value = _uiState.value.copy(loading = true, error = null)
@@ -389,9 +389,9 @@ class SoloViewModel(
     }
 
     private fun nextDueElapsed(previousElapsedMs: Long, durationMs: Long): Long {
-        val intervalMinutes = Random.nextInt(SoloConstants.MIN_CHECKPOINT_INTERVAL_MINUTES, SoloConstants.MAX_CHECKPOINT_INTERVAL_MINUTES + 1)
-        val due = previousElapsedMs + intervalMinutes * 60_000L
-        val lastAllowedIntermediate = durationMs - SoloConstants.MIN_REMAINING_MINUTES_FOR_CHECKPOINT * 60_000L
+        val intervalSeconds = Random.nextInt(SoloConstants.CHECKPOINT_INTERVAL_MIN_SECONDS, SoloConstants.CHECKPOINT_INTERVAL_MAX_SECONDS + 1)
+        val due = previousElapsedMs + intervalSeconds * 1_000L
+        val lastAllowedIntermediate = durationMs - SoloConstants.MIN_REMAINING_SECONDS_FOR_CHECKPOINT * 1_000L
         return if (due <= lastAllowedIntermediate) due else durationMs
     }
 

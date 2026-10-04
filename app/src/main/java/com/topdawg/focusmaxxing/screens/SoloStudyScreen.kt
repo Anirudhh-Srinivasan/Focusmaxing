@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.topdawg.focusmaxxing.BuildConfig
 import com.topdawg.focusmaxxing.solo.SoloConstants
 import com.topdawg.focusmaxxing.solo.SoloMaterial
 import com.topdawg.focusmaxxing.solo.SoloPhase
@@ -68,7 +69,9 @@ fun SoloStudyScreen(viewModel: SoloViewModel, onBack: () -> Unit) {
             Text("Session length")
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 SoloConstants.SESSION_LENGTHS_MINUTES.forEach { minutes ->
-                    FilterChip(selected = duration == minutes, onClick = { duration = minutes }, label = { Text("${minutes}m") })
+                    FilterChip(selected = duration == minutes, onClick = { duration = minutes }, label = {
+                        Text(if (BuildConfig.DEBUG && minutes == 2) "2 min (debug)" else "${minutes}m")
+                    })
                 }
             }
             OutlinedTextField(startPage, { startPage = it }, label = { Text("Start from page") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)

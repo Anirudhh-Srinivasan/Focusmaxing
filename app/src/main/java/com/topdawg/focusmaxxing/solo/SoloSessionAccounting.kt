@@ -8,7 +8,7 @@ data class SessionAccountingResult(val profile: UserProfile, val session: SoloSe
 object SoloSessionAccounting {
     fun award(profile: UserProfile, session: SoloSessionRecord): SessionAccountingResult {
         val date = LocalDate.parse(session.dateKey)
-        val qualifies = session.activeSeconds >= SoloConstants.MIN_COUNTED_SESSION_MINUTES * 60L
+        val qualifies = session.activeSeconds >= SoloConstants.MIN_COUNTED_SESSION_SECONDS
         val alreadyToday = if (profile.soloPointsDate == session.dateKey) profile.soloPointsToday else 0
         val points = if (qualifies) SoloScoring.sessionPoints(session.rawPoints, session.activeSeconds, alreadyToday) else 0
         val xp = profile.xp + points
