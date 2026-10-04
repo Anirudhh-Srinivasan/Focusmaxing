@@ -27,6 +27,8 @@ data class SoloSegmentRecord(
     val paceWpm: Int,
     val interruptions: Int,
     val points: Int,
+    val pagesReflected: List<Int> = emptyList(),
+    val pageWordCounts: List<Int> = emptyList(),
     val cappedWords: Int = 0,
     val recallFactor: Double = 0.0,
     val focusFactor: Double = 1.0,

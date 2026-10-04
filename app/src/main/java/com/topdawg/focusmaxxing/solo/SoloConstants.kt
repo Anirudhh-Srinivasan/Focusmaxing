@@ -78,6 +78,9 @@ data class SegmentScore(
 )
 
 object SoloScoring {
+    fun pagesReflected(fromPage: Int, toPage: Int, pagesReflected: List<Int>): List<Int> =
+        pagesReflected.filter { it in fromPage..toPage }.distinct().sorted()
+
     fun creditedWords(pageWordCounts: List<Int>, fromPage: Int, toPage: Int, pagesReflected: List<Int>): Int {
         val first = fromPage.coerceAtLeast(1)
         val last = toPage.coerceAtMost(pageWordCounts.size)

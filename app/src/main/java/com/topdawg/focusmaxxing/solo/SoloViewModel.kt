@@ -241,6 +241,8 @@ class SoloViewModel(
                     paceWpm = if (activeSeconds <= 0) 0 else (wordsCovered * 60.0 / activeSeconds).toInt(),
                     interruptions = active.currentSegmentInterruptions,
                     points = if (nothingCovered) 0 else score.points,
+                    pagesReflected = grade?.pagesReflected.orEmpty(),
+                    pageWordCounts = active.material.pageWordCounts,
                     cappedWords = score.cappedWords,
                     recallFactor = score.recallFactor,
                     focusFactor = score.focusFactor,

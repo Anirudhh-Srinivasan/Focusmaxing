@@ -306,6 +306,8 @@ private fun SegmentResultScreen(segment: com.topdawg.focusmaxxing.solo.SoloSegme
             Text(if (segment.didNotCoverAnything) "No pages covered" else "Pages ${segment.fromPage}–${segment.toPage}", style = MaterialTheme.typography.titleMedium)
             Text("${segment.wordsCovered} words · ${segment.activeSeconds / 60} min · ${segment.paceWpm} words/min · recall ${segment.recallScore}%")
             Text("${segment.points} points", style = MaterialTheme.typography.titleLarge)
+            SegmentCreditLine(segment)
+            if (segment.points == 0) SoloScoring.zeroPointsReason(segment.recallScore, SoloScoring.pagesReflected(segment.fromPage, segment.toPage, segment.pagesReflected).size)?.let { Text(it) }
             Text(segment.feedback)
             if (segment.keyPointsMissed.isNotEmpty()) {
                 Text("Key points to revisit", style = MaterialTheme.typography.titleSmall)
@@ -338,12 +340,25 @@ private fun SessionResultsScreen(session: com.topdawg.focusmaxxing.solo.SoloSess
             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) {
                 Text("Segment ${index + 1}: pages ${segment.fromPage}–${segment.toPage}", style = MaterialTheme.typography.titleMedium)
                 Text("${segment.wordsCovered} words · ${segment.activeSeconds / 60} min · recall ${segment.recallScore}% · ${segment.points} XP")
+                SegmentCreditLine(segment)
+                if (segment.points == 0) SoloScoring.zeroPointsReason(segment.recallScore, SoloScoring.pagesReflected(segment.fromPage, segment.toPage, segment.pagesReflected).size)?.let { Text(it) }
                 Text(segment.feedback, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } }
         }
         item { Button(onClick = onRunItBack, modifier = Modifier.fillMaxWidth()) { Text("Run it back") } }
         item { OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Back to home") } }
     }
+}
+
+@Composable
+private fun SegmentCreditLine(segment: com.topdawg.focusmaxxing.solo.SoloSegmentRecord) {
+    val pages = SoloScoring.pagesReflected(segment.fromPage, segment.toPage, segment.pagesReflected)
+    val rangeWords = SoloScoring.creditedWords(
+        segment.pageWordCounts, segment.fromPage, segment.toPage,
+        (segment.fromPage..segment.toPage).toList()
+    )
+    val creditedWords = SoloScoring.creditedWords(segment.pageWordCounts, segment.fromPage, segment.toPage, pages)
+    Text("Pages credited: ${pages.size} of ${segment.fromPage}–${segment.toPage} ($creditedWords of $rangeWords words)")
 }
 
 @Composable private fun ErrorSoloScreen(message: String, onBack: () -> Unit) { Column(Modifier.fillMaxSize().padding(24.dp)) { Text(message, color = MaterialTheme.colorScheme.error); TextButton(onClick = onBack) { Text("Back") } } }
