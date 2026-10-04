@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.topdawg.focusmaxxing.BuildConfig
@@ -37,6 +38,7 @@ import com.topdawg.focusmaxxing.solo.*
 import com.topdawg.focusmaxxing.solo.SoloUiState
 import com.topdawg.focusmaxxing.ui.components.*
 import com.topdawg.focusmaxxing.ui.theme.*
+import com.topdawg.focusmaxxing.ui.theme.FocusmaxxingTheme
 import java.io.File
 import java.util.LinkedHashMap
 import kotlin.math.roundToInt
@@ -203,6 +205,51 @@ private object PdfBitmapCache {
     }
 }
 
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10, heightDp = 900)
+@Composable private fun SoloSetupPreview() = FocusmaxxingTheme {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("SOLO BATTLE", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall)
+        PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) { Text("MISSION", style = MaterialTheme.typography.titleMedium); PixelTextField("Cell biology", {}, "TOPIC") }
+        PixelCard(Modifier.fillMaxWidth()) { Text("STUDY MATERIAL", style = MaterialTheme.typography.titleMedium); Text("Biology notes.pdf · 48 pages", color = ArcadeColors.TextMuted); PixelButton("PICK PDF OR TXT", {}, kind = PixelButtonKind.Secondary) }
+        PixelCard(Modifier.fillMaxWidth()) { Text("SESSION LENGTH", style = MaterialTheme.typography.titleMedium); Text("2 MIN · DEBUG     25 MIN     45 MIN     60 MIN     90 MIN"); PixelTextField("12", {}, "START PAGE") }
+        PixelButton("START SESSION", {})
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun ReaderPreview() = FocusmaxxingTheme {
+    Column(Modifier.fillMaxSize().padding(top = 30.dp)) {
+        PixelProgressBar(.62f, Modifier.fillMaxWidth().height(3.dp), segments = 32)
+        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("24:18", fontFamily = PixelHeadingFont, color = ArcadeColors.Text); Text("12 / 48", color = ArcadeColors.TextMuted); Text("Leave", color = ArcadeColors.TextMuted) }
+        Text("PAGE 12", Modifier.padding(horizontal = 20.dp), color = ArcadeColors.TextMuted, style = MaterialTheme.typography.labelMedium)
+        Text("Photosynthesis converts light energy into chemical energy stored in glucose. Chlorophyll in chloroplasts captures sunlight, which powers the reactions that combine carbon dioxide and water.", Modifier.padding(20.dp), color = Color(0xFFF0EEE8), style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 30.sp))
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10, heightDp = 900)
+@Composable private fun CheckpointPreview() = FocusmaxxingTheme {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("CHECKPOINT", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall)
+        PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Info) { Text("Scores are estimates. Your timer is paused while you check in.") }
+        PixelCard(Modifier.fillMaxWidth()) { Text("PAGES COVERED", style = MaterialTheme.typography.titleMedium); Row { PixelTextField("12", {}, "FROM", Modifier.weight(1f)); PixelTextField("18", {}, "TO", Modifier.weight(1f)) } }
+        PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) { Text("QUICK RECALL", style = MaterialTheme.typography.titleMedium); PixelTextField("The mitochondria produces ATP through cellular respiration. Glycolysis splits glucose in the cytoplasm, then the Krebs cycle and electron transport chain produce most of the energy.", {}, "WHAT DID YOU LEARN?", minLines = 4); PixelProgressBar(.48f, Modifier.fillMaxWidth(), segments = 15); Text("72 / 150 words · good to go", color = ArcadeColors.Accent) }
+        PixelButton("SUBMIT CHECKPOINT", {})
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10, heightDp = 850)
+@Composable private fun SegmentResultPreview() = FocusmaxxingTheme {
+    SegmentResultScreen(SoloSegmentRecord(12, 18, 7, 410, 900, 82, 27, 0, 8, listOf(12, 13, 14, 15), List(48) { 80 }, 410, .82, 1.0, "Strong recall. You connected the key steps.", listOf("Review the role of oxygen."), false), false, {})
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10, heightDp = 900)
+@Composable private fun SessionResultsPreview() = FocusmaxxingTheme {
+    SessionResultsScreen(SoloSessionRecord("preview", "Cell biology", "1", "Biology notes.pdf", 0, 0, 1200, 2700, 12, 26, listOf(SoloSegmentRecord(12, 18, 7, 410, 900, 82, 27, 0, 8, listOf(12, 13, 14, 15), List(48) { 80 }, feedback = "Strong recall.", keyPointsMissed = emptyList(), didNotCoverAnything = false)), 410, 0, 12, 12, true, false, "2026-10-04", 1010, "Silver"), {}, {})
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun RankUpPreview() = FocusmaxxingTheme { PixelDialog({}, "RANK UP!", confirmButton = { PixelButton("LET'S GO", {}) }) { Text("You crossed into Silver."); RankBadge("Silver", Modifier.fillMaxWidth(), RankBadgeSize.Large) } }
+
 @Composable private fun CheckpointScreen(pageCount: Int, defaultFrom: Int, defaultTo: Int, isFinal: Boolean, activeSeconds: Long, loading: Boolean, error: String?, onSubmit: (Int, Int, String, Boolean) -> Unit, onLeave: () -> Unit) {
     var from by remember(defaultFrom) { mutableStateOf(defaultFrom.toString()) }
     var to by remember(defaultTo) { mutableStateOf(defaultTo.toString()) }
@@ -261,9 +308,10 @@ private object PdfBitmapCache {
     val xpBefore = (session.xpAfter - session.totalPoints).coerceAtLeast(0)
     val oldRank = SoloScoring.rankForXp(xpBefore)
     val progress = SoloScoring.rankProgress(session.xpAfter)
+    val animationsEnabled = rememberAnimationsEnabled()
     var displayedPoints by remember(session.sessionId) { mutableIntStateOf(0) }
     var showRankUp by remember(session.sessionId) { mutableStateOf(oldRank != progress.rank) }
-    val animatedProgress by animateFloatAsState(progress.progressWithinRank, label = "rank-progress")
+    val animatedProgress by animateFloatAsState(progress.progressWithinRank, animationSpec = if (animationsEnabled) androidx.compose.animation.core.tween(180) else androidx.compose.animation.core.snap(), label = "rank-progress")
     LaunchedEffect(session.sessionId) { if (session.totalPoints <= 120) { for (value in 0..session.totalPoints) { displayedPoints = value; kotlinx.coroutines.delay(10) } } else { displayedPoints = session.totalPoints }; displayedPoints = session.totalPoints }
     LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(safeWindowInsets()).padding(16.dp), contentPadding = PaddingValues(bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("SESSION COMPLETE", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall) }

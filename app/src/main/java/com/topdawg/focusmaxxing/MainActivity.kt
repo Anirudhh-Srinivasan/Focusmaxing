@@ -2,6 +2,7 @@ package com.topdawg.focusmaxxing
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private var checkpointLaunch by mutableStateOf(false)
     companion object { const val EXTRA_OPEN_CHECKPOINT = "open_solo_checkpoint" }
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         checkpointLaunch = intent.getBooleanExtra(EXTRA_OPEN_CHECKPOINT, false)
         container = AppContainer(this)

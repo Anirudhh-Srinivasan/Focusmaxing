@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.topdawg.focusmaxxing.ui.components.*
 import com.topdawg.focusmaxxing.ui.theme.*
 import com.topdawg.focusmaxxing.viewmodels.LobbyViewModel
+import com.topdawg.focusmaxxing.ui.theme.FocusmaxxingTheme
 
 @Composable
 fun CreateLobbyScreen(viewModel: LobbyViewModel, onLobbyCreated: (String) -> Unit, onBack: () -> Unit) {
@@ -137,3 +139,34 @@ fun LobbyScreen(code: String, viewModel: LobbyViewModel, onBackHome: () -> Unit)
 }
 
 @Composable internal fun InlineError(message: String) = PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Danger, containerColor = ArcadeColors.SurfaceHigh) { Text(message, color = ArcadeColors.Danger, style = MaterialTheme.typography.bodyMedium) }
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun CreateLobbyPreview() = FocusmaxxingTheme {
+    PixelScaffold(title = "Create lobby", onBack = {}) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("SET THE STAGE", color = ArcadeColors.Accent, style = MaterialTheme.typography.headlineSmall)
+            PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) { Text("Room details"); PixelTextField("late night lock-in", {}, "ROOM NAME"); Text("PUBLIC · Anyone can find it") }
+            PixelButton("CREATE ROOM", {})
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun JoinLobbyPreview() = FocusmaxxingTheme {
+    PixelScaffold(title = "Join lobby", onBack = {}) { padding -> Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.Center) { PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) { Text("GOT A CODE?", style = MaterialTheme.typography.headlineSmall); PixelTextField("PIXEL7", {}, "ROOM CODE"); PixelButton("JOIN ROOM", {}) } } }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun WaitingRoomPreview() = FocusmaxxingTheme {
+    PixelScaffold(title = "Late Night Lock-in", onBack = {}) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Accent) { Text("ROOM CODE"); Text("PIXEL7", color = ArcadeColors.Accent, fontFamily = PixelHeadingFont, fontSize = 28.sp); Text("PRIVATE · 1/3 players") }
+            PixelCard(Modifier.fillMaxWidth(), accent = ArcadeColors.Gold) { Row(verticalAlignment = Alignment.CenterVertically) { RankBadge("Gold", size = RankBadgeSize.Small); Text("top_dawg", Modifier.weight(1f)); Text("♛") } }
+            repeat(2) { Box(Modifier.fillMaxWidth().height(68.dp).border(2.dp, ArcadeColors.Border, PixelShape()).padding(14.dp), contentAlignment = Alignment.CenterStart) { Text("WAITING FOR PLAYER ${it + 1}...", color = ArcadeColors.TextMuted) } }
+            PixelButton("LEAVE ROOM", {}, kind = PixelButtonKind.Secondary)
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun LobbyErrorPreview() = FocusmaxxingTheme { PixelScaffold(title = "Waiting room", onBack = {}) { padding -> Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { InlineError("Room is full. Ask the host for another code."); PixelButton("BACK HOME", {}) } } }

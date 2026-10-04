@@ -9,12 +9,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.topdawg.focusmaxxing.data.UserProfile
 import com.topdawg.focusmaxxing.solo.SoloScoring
 import com.topdawg.focusmaxxing.ui.components.*
 import com.topdawg.focusmaxxing.ui.theme.*
 import com.topdawg.focusmaxxing.viewmodels.FriendsViewModel
+import com.topdawg.focusmaxxing.ui.theme.FocusmaxxingTheme
 
 @Composable
 fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: () -> Unit, onUpgrade: () -> Unit) {
@@ -135,3 +137,34 @@ fun FriendsScreen(viewModel: FriendsViewModel, requestsOnly: Boolean, onBack: ()
 }
 
 @Composable private fun ProfileStat(label: String, value: String) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(label, color = ArcadeColors.TextMuted, style = MaterialTheme.typography.labelSmall); Text(value, color = ArcadeColors.Text, style = MaterialTheme.typography.bodyMedium) } }
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun FriendsPreview() = FocusmaxxingTheme {
+    PixelScaffold(title = "Friends", onBack = {}) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { PixelButton("FRIENDS", {}, Modifier.weight(1f)); PixelButton("LEADERBOARD", {}, Modifier.weight(1f), kind = PixelButtonKind.Secondary) }
+            PixelTextField("pixel", {}, "SEARCH PLAYERS")
+            FriendRow(UserProfile("1", "top_dawg", false, xp = 2840, streak = 8, sessionsPlayed = 24, battlesPlayed = 11)) {}
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun FriendRequestsPreview() = FocusmaxxingTheme {
+    PixelScaffold(title = "Friend requests", onBack = {}) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) { Text("INCOMING REQUESTS", style = MaterialTheme.typography.titleMedium); PixelCard(Modifier.fillMaxWidth()) { Text("@pixelpilot"); Text("Wants to join your squad.", color = ArcadeColors.TextMuted); Row { PixelButton("ACCEPT", {}, Modifier.weight(1f)); PixelButton("DECLINE", {}, Modifier.weight(1f), kind = PixelButtonKind.Secondary) } } }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun FriendEmptyPreview() = FocusmaxxingTheme { PixelScaffold(title = "Friends", onBack = {}) { padding -> Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { PixelTextField("", {}, "SEARCH PLAYERS", placeholder = "username"); PixelButton("SEARCH", {}, enabled = false); PixelCard(Modifier.fillMaxWidth()) { Text("NO FRIENDS YET", color = ArcadeColors.Text); Text("Search for someone by username to start your squad.", color = ArcadeColors.TextMuted) } } } }
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun LeaderboardPreview() = FocusmaxxingTheme {
+    PixelScaffold(title = "Friends", onBack = {}) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("XP LEADERBOARD", style = MaterialTheme.typography.titleMedium); LeaderboardRow(UserProfile("1", "pixelpilot", false, xp = 4200), 1, false) {}; LeaderboardRow(UserProfile("2", "top_dawg", false, xp = 2840), 2, true) {}; LeaderboardRow(UserProfile("3", "studybeast", false, xp = 1900), 3, false) {} }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF0B0D10)
+@Composable private fun FriendProfilePreview() = FocusmaxxingTheme { FriendProfileScreen(UserProfile("1", "top_dawg", false, xp = 2840, streak = 8, sessionsPlayed = 24, battlesPlayed = 11), {}) }

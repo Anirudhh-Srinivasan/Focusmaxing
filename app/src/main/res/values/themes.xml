@@ -8,4 +8,10 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
     </style>
+
+    <style name="Theme.Focusmaxxing.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0B0D10</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_paw</item>
+        <item name="postSplashScreenTheme">@style/Theme.Focusmaxxing</item>
+    </style>
 </resources>

@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,8 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -101,6 +104,19 @@ class PixelShape(
     }
 }
 
+@Composable
+fun rememberAnimationsEnabled(): Boolean {
+    val context = LocalContext.current
+    var enabled by remember(context) { mutableStateOf(true) }
+    LaunchedEffect(context) {
+        while (true) {
+            enabled = runCatching { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }.getOrDefault(true)
+            delay(500)
+        }
+    }
+    return enabled
+}
+
 enum class PixelButtonKind { Primary, Secondary, Danger }
 
 @Composable
@@ -113,6 +129,7 @@ fun PixelButton(
     loading: Boolean = false,
     leading: (@Composable () -> Unit)? = null
 ) {
+    val animationsEnabled = rememberAnimationsEnabled()
     val shape = remember { PixelShape() }
     val pressedSource = remember { MutableInteractionSource() }
     val isPressed by pressedSource.collectIsPressedAsState()
@@ -144,7 +161,7 @@ fun PixelButton(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = ArcadeDimens.MinimumTouchTarget)
-                .graphicsLayer { translationY = if (isPressed && isEnabled) ArcadeDimens.ShadowOffset.toPx() else 0f }
+                .graphicsLayer { translationY = if (isPressed && isEnabled && animationsEnabled) ArcadeDimens.ShadowOffset.toPx() else 0f }
                 .clip(shape)
                 .background(fill)
                 .border(ArcadeDimens.BorderWidth, borderColor, shape)
@@ -252,10 +269,12 @@ fun PixelProgressBar(
     contentDescription: String = "Progress"
 ) {
     val safeProgress = progress.coerceIn(0f, 1f)
+    val animationsEnabled = rememberAnimationsEnabled()
+    val animatedProgress by androidx.compose.animation.core.animateFloatAsState(targetValue = safeProgress, animationSpec = if (animationsEnabled) androidx.compose.animation.core.tween(160) else androidx.compose.animation.core.snap(), label = "pixel-progress")
     Canvas(modifier.heightIn(min = 12.dp).semantics { this.contentDescription = "$contentDescription ${(safeProgress * 100).toInt()} percent" }) {
         val gap = 2.dp.toPx()
         val widthPer = (size.width - gap * (segments - 1)) / segments
-        val filled = (safeProgress * segments).toInt().coerceIn(0, segments)
+        val filled = (animatedProgress * segments).toInt().coerceIn(0, segments)
         for (index in 0 until segments) {
             val left = index * (widthPer + gap)
             drawRect(
